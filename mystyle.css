@@ -1,9 +1,8 @@
-svg {
-	background-color:yellow;
-	display: block;
-	margin-left: auto;
-    margin-right: auto
-	}
+svg, canvas {	
+	position: absolute;
+	top: 0;
+	left: 0;
+	}	
 body{
 	background-color:white;
 	}

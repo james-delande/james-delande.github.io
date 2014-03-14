@@ -8,9 +8,10 @@ var xscale = d3.scale.linear()
 var yscale = d3.scale.linear()
 					 .domain([2500,-500])
 					 .range([0,h]);
-var colorScale = d3.scale.linear()
-					 .domain([0,6])
-					 .range(["blue","red"]);
+					 					 
+var timeScale = d3.scale.linear()
+				 .domain([0,1])
+				 .range([0,255]);
 
 var svgContainer = d3.select("body")
 			.append("svg")
@@ -27,14 +28,20 @@ heatmap = canvas.getContext('2d');
 var canvas2 = document.getElementById('heatmap2');
 heatmap2 = canvas2.getContext('2d');
 
-var sonarRange = 100, sonarAngle = Math.PI/4;
+var canvas3 = document.getElementById('heatmap3');
+heatmap3 = canvas3.getContext('2d');
+
+var image = heatmap3.createImageData(canvas2.width,canvas2.height); 
+
+var sonarRange = 100, sonarAngle = Math.PI/4,
+	last = 0, samples=0;
 
 var lineData = new Array();
 	lineData.push([{ "x": 0,   "y": 500},  { "x": 200,  "y": 500},
                  { "x": 0,  "y": 700}, { "x": 200,  "y": 700}]);
 	lineData.push([{ "x": 100,   "y": 1000},  { "x": 300,  "y": 1000},
                  { "x": 100,  "y": 1200}, { "x": 300,  "y": 1200}]);		 
-
+// console.log(lineData);
 //Create the path line
 var lineFunction = d3.svg.line()
                          .x(function(d) { return xscale(d.x); })
@@ -42,8 +49,8 @@ var lineFunction = d3.svg.line()
                          .interpolate("cardinal-closed");
 
 var colors = new Array();
-	colors.push("red");
-	colors.push("green");
+	colors.push(d3.rgb("red"));
+	colors.push(d3.rgb("green"));
 var className = new Array();
 	className.push("one");
 	className.push("two");
@@ -65,10 +72,10 @@ for(i=0;i<lineData.length;i++){
 	//Circle object, might be replacing with triangle	
 	circle.push(svgContainer.append("circle")
 					.attr("class",className[i])
+					.attr("fill", colors[i])
 					.attr("r", 5)
 					.attr("transform","translate("+[xscale(lineData[i][0].x), yscale(lineData[i][0].y)] + ")"));
 }
-
 
 transition();
 
@@ -82,7 +89,7 @@ function transition() {
 		.ease("linear")
 		.attrTween("transform", function(d){ // Returns an attrTween for translating along the specified path element.
 										var path = d.node();
-										console.log(path.classList);
+										//console.log(path.classList);
 										var classList = path.classList;
 										var l = path.getTotalLength();
 										return function(t) {												
@@ -101,11 +108,53 @@ function transition() {
 											}
 											return "translate(" + p.x + "," + p.y + ")";
 										}
-									});
-											
-		//.each("end", transition);		
+									})									
+		.each("end", finish);		
 }
 
+function finish(){
+	if(++last == 2){ 
+	heatmap.clearRect(0,0,canvas.width,canvas.height);
+	heatmap2.clearRect(0,0,canvas2.width,canvas2.height);
+	max= 0;
+	min= 255;	
+	for (var i=image.data.length;i>0;i-=4){
+		
+		if(image.data[i]>max){
+			max = image.data[i];
+		}
+		if(image.data[i+3]<min){
+			min = image.data[i];
+		}
+		
+	}
+	var colorScale = d3.scale.linear()
+					 .domain([min,max])
+					 .range(["blue","red"]);
+	for (var i=image.data.length;i>0;i-=4){
+		var col = colorScale(image.data[i]);
+		for(var j = 0; j<3;j++){
+			image.data[i+j] = h2d(col.substring(2*j+1,2*j+3));
+		}
+		
+		image.data[i+3] = image.data[i];
+		
+	}
+	
+	for(var j = 0; j<3;j++){
+		console.log(col.substring(2*j+1,2*j+3));
+		console.log(h2d(col.substring(2*j+1,2*j+3)));
+	}
+	console.log(col);
+
+	console.log(min,max);
+	console.log(samples);
+	heatmap3.putImageData(image,0,0);
+	}
+}
+
+//convert hex to decimal
+function h2d(h) {return parseInt(h,16);} 
 
 function drawForwardSonar(p,p1,color){		
 		heatmap.clearRect(0,0,canvas.width,canvas.height);
@@ -129,9 +178,13 @@ function drawForwardSonar(p,p1,color){
 		heatmap.fill();
 		heatmap.closePath();
 		
+		var temp = heatmap.getImageData(0,0,canvas2.width,canvas2.height);
+		scaleHeatMap(temp);
+				
 };
 
 function drawSideScanSonar(p,p1,color){
+		//console.log(color);
 		heatmap2.clearRect(0,0,canvas2.width,canvas2.height);
 		var heading = Math.atan2((p.y-p1.y),(p.x-p1.x));//heading in radians, 0 is 3 O'Clock
 		if(isNaN(heading)){//we are going vertically, i.e. p1.x == p.x
@@ -157,7 +210,25 @@ function drawSideScanSonar(p,p1,color){
 		heatmap2.arc(center[2],center[3], sonarRange/2, perp[1]-sonarAngle, perp[1]+sonarAngle, false);
 		heatmap2.fill();
 		heatmap2.closePath();	
-		//heatmap2.stroke();
+		//heatmap2.stroke();		
+		var temp = heatmap2.getImageData(0,0,canvas2.width,canvas2.height);
+		scaleHeatMap(temp);
+
 		
-		//console.log(heatmap2.getImageData(0,0,canvas2.width,canvas2.height));
+};
+
+function scaleHeatMap(temp){
+	samples++;
+	for (var i=0;i<image.data.length;i+=4){
+		image.data[i] = image.data[i] + temp.data[i];
+		// if(image.data[i]==255){
+			// console.log(i,samples);
+		// }
+		// image.data[i+1] = image.data[i+1] + temp.data[i+1];
+		// image.data[i+2] = image.data[i+2] + temp.data[i+2];
+		// image.data[i+3] = image.data[i+3] + temp.data[i+3];
+		// for(var j = 0; j<4;j++){
+			// image.data[i+j] = image.data[i+j] + temp.data[i+j];
+		// }
+	}
 };

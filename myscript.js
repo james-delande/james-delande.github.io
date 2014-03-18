@@ -128,19 +128,31 @@ function finish(){
 		}
 		
 	}
+	var imageDataScale = d3.scale.linear()
+				.domain([0,255])
+				.range([0,5]);
 	var colorScale = d3.scale.linear()
-					 .domain([min,max])
-					 .range(["blue","red"]);
-	for (var i=image.data.length;i>0;i-=4){
-		var col = colorScale(image.data[i]);
+					 .domain([0,1,2,3,4,5])
+					 .range(["white","blue","yellow","green","orange","red"]);
+	for (var i=0;i<image.data.length;i+=4){
+		var col = colorScale(imageDataScale(image.data[i]));
 		for(var j = 0; j<3;j++){
 			image.data[i+j] = h2d(col.substring(2*j+1,2*j+3));
-		}
-		
-		image.data[i+3] = image.data[i];
-		
+		}		
+		image.data[i+3] = 200;		
 	}
-	
+	//working version using quantize
+	// var colorScale = d3.scale.quantize()
+					 // .domain([0,255])
+					 // .range(["#FFFFFF","#0000FF","#FFFF00","#00FF00","#FF9900","#FF0000"]);
+	// for (var i=0;i<image.data.length;i+=4){
+		// var col = colorScale(image.data[i]);
+		// //console.log(image.data[i]);
+		// for(var j = 0; j<3;j++){
+			// image.data[i+j] = h2d(col.substring(2*j+1,2*j+3));
+		// }		
+		// image.data[i+3] = 200;		
+	// }
 	for(var j = 0; j<3;j++){
 		console.log(col.substring(2*j+1,2*j+3));
 		console.log(h2d(col.substring(2*j+1,2*j+3)));

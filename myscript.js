@@ -116,6 +116,7 @@ function finish(){
 	if(++last == 2){ 
 	heatmap.clearRect(0,0,canvas.width,canvas.height);
 	heatmap2.clearRect(0,0,canvas2.width,canvas2.height);
+	//Find min and max, not sure if I really need this
 	max= 0;
 	min= 255;	
 	for (var i=image.data.length;i>0;i-=4){
@@ -128,42 +129,78 @@ function finish(){
 		}
 		
 	}
-	var imageDataScale = d3.scale.linear()
-				.domain([0,255])
-				.range([0,5]);
-	var colorScale = d3.scale.linear()
-					 .domain([0,1,2,3,4,5])
-					 .range(["white","blue","yellow","green","orange","red"]);
-	for (var i=0;i<image.data.length;i+=4){
-		var col = colorScale(imageDataScale(image.data[i]));
-		for(var j = 0; j<3;j++){
-			image.data[i+j] = h2d(col.substring(2*j+1,2*j+3));
-		}		
-		image.data[i+3] = 200;		
-	}
-	//working version using quantize
-	// var colorScale = d3.scale.quantize()
-					 // .domain([0,255])
-					 // .range(["#FFFFFF","#0000FF","#FFFF00","#00FF00","#FF9900","#FF0000"]);
+	//working version using linear, using two scales
+	// var imageDataScale = d3.scale.linear()
+				// .domain([0,255])
+				// .range([0,5]);
+	// var colorScale = d3.scale.linear()
+					 // .domain([0,1,2,3,4,5])
+					 // .range(["white","blue","yellow","green","orange","red"]);
 	// for (var i=0;i<image.data.length;i+=4){
-		// var col = colorScale(image.data[i]);
-		// //console.log(image.data[i]);
+		// var col = colorScale(imageDataScale(image.data[i]));
 		// for(var j = 0; j<3;j++){
 			// image.data[i+j] = h2d(col.substring(2*j+1,2*j+3));
 		// }		
 		// image.data[i+3] = 200;		
 	// }
-	for(var j = 0; j<3;j++){
-		console.log(col.substring(2*j+1,2*j+3));
-		console.log(h2d(col.substring(2*j+1,2*j+3)));
+	//Array for percentage of coverage area
+	var percents = [0,0,0,0,0,0,0];
+	//working version using quantize
+	var colorScale = d3.scale.quantize()
+					 .domain([0,255])
+					 .range(["#FFFFFF","#0000FF","#FFFF00","#00FF00","#FF9900","#FF0000"]);
+	for (var i=0;i<image.data.length;i+=4){
+		var col = colorScale(image.data[i]);
+		//console.log(image.data[i]);
+		for(var j = 0; j<3;j++){
+			image.data[i+j] = h2d(col.substring(2*j+1,2*j+3));
+		}
+		//Need to figure out a better way to handle alpha
+		image.data[i+3] = 200;
+		switch(col){
+			case "#FFFFFF":
+				percents[0]++;
+				break;
+			case "#0000FF":
+				percents[1]++;
+				break;
+			case "#FFFF00":
+				percents[2]++;
+				break;
+			case "#00FF00":
+				percents[3]++;
+				break;
+			case "#FF9900":
+				percents[4]++;
+				break;
+			case "#FF0000":
+				percents[5]++;
+				break;
+			default:
+				percents[6]++;
+				console.log("booo!");
+				break;
+		}
 	}
-	console.log(col);
-
-	console.log(min,max);
-	console.log(samples);
+	//Check to make sure string is parsed correctly
+	// for(var j = 0; j<3;j++){
+		// console.log(col.substring(2*j+1,2*j+3));
+		// console.log(h2d(col.substring(2*j+1,2*j+3)));
+	// }
+	//Get percentages of coverage area
+	var total = 0;
+	for(i=0; i< percents.length;i++){
+		total +=percents[i]/(image.data.length/4);
+		//console.log(percents[i]/(image.data.length/4));
+	}
+	//Checking output
+	// console.log(total);
+	// console.log(min,max);
+	// console.log(samples);
 	heatmap3.putImageData(image,0,0);
+
 	}
-}
+};
 
 //convert hex to decimal
 function h2d(h) {return parseInt(h,16);} 

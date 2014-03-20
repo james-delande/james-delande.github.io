@@ -144,11 +144,12 @@ function finish(){
 		// image.data[i+3] = 200;		
 	// }
 	//Array for percentage of coverage area
-	var percents = [0,0,0,0,0,0,0];
+	var percents = [0,0,0,0,0,0];
 	//working version using quantize
+	var scaleColors = ["#FFFFFF","#0000FF","#FFFF00","#00FF00","#FF9900","#FF0000"];
 	var colorScale = d3.scale.quantize()
 					 .domain([0,255])
-					 .range(["#FFFFFF","#0000FF","#FFFF00","#00FF00","#FF9900","#FF0000"]);
+					 .range(scaleColors);
 	for (var i=0;i<image.data.length;i+=4){
 		var col = colorScale(image.data[i]);
 		//console.log(image.data[i]);
@@ -157,27 +158,27 @@ function finish(){
 		}
 		//Need to figure out a better way to handle alpha
 		image.data[i+3] = 200;
+		//Find out what category it falls into
 		switch(col){
-			case "#FFFFFF":
+			case scaleColors[0]:
 				percents[0]++;
 				break;
-			case "#0000FF":
+			case scaleColors[1]:
 				percents[1]++;
 				break;
-			case "#FFFF00":
+			case scaleColors[2]:
 				percents[2]++;
 				break;
-			case "#00FF00":
+			case scaleColors[3]:
 				percents[3]++;
 				break;
-			case "#FF9900":
+			case scaleColors[4]:
 				percents[4]++;
 				break;
-			case "#FF0000":
+			case scaleColors[5]:
 				percents[5]++;
 				break;
 			default:
-				percents[6]++;
 				console.log("booo!");
 				break;
 		}
@@ -190,15 +191,40 @@ function finish(){
 	//Get percentages of coverage area
 	var total = 0;
 	for(i=0; i< percents.length;i++){
-		total +=percents[i]/(image.data.length/4);
-		//console.log(percents[i]/(image.data.length/4));
+		percents[i] = percents[i]/(image.data.length/4);
+		total +=percents[i];		
+		//console.log(percents[i]);
 	}
 	//Checking output
 	// console.log(total);
 	// console.log(min,max);
 	// console.log(samples);
 	heatmap3.putImageData(image,0,0);
-
+	//Create heatmap legend
+	var legend = d3.select("body")
+			.append("svg")
+			.attr("width",w)
+			.attr("height",h);
+	legend.selectAll("rect")
+			.data(percents)
+			.enter()
+			.append("rect")
+			.attr("x", function(d,i){return w/6 *i;})
+			.attr("y", h-50)
+			.attr("width", 15)
+			.attr("height", 15)
+			.attr("fill", function(d,i){return scaleColors[i]})
+			.attr("stroke","black")
+			.attr("stroke-width", 1);
+	
+	legend.selectAll("text")
+		.data(percents)
+		.enter()
+		.append("text")
+		.text(function(d) {return Math.round(d*100)+"%";})
+		.attr("x", function(d,i){return w/6 *i;})
+		.attr("y", function(d,i){return h-20;});
+	
 	}
 };
 
@@ -228,8 +254,7 @@ function drawForwardSonar(p,p1,color){
 		heatmap.closePath();
 		
 		var temp = heatmap.getImageData(0,0,canvas2.width,canvas2.height);
-		scaleHeatMap(temp);
-				
+		scaleHeatMap(temp);				
 };
 
 function drawSideScanSonar(p,p1,color){

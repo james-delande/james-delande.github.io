@@ -201,29 +201,31 @@ function finish(){
 	// console.log(samples);
 	heatmap3.putImageData(image,0,0);
 	//Create heatmap legend
-	var legend = d3.select("body")
+	var legendSvg = d3.select("body")
 			.append("svg")
-			.attr("width",w)
-			.attr("height",h);
-	legend.selectAll("rect")
+			.attr("width",100)
+			.attr("height",h)
+			.attr("class","legendSVG");
+			
+	legendSvg.selectAll("rect")
 			.data(percents)
 			.enter()
 			.append("rect")
-			.attr("x", function(d,i){return w/6 *i;})
-			.attr("y", h-50)
+			.attr("x", function(d,i){return 25;})
+			.attr("y", function(d,i){return h - h/6 * i - 50;})
 			.attr("width", 15)
 			.attr("height", 15)
 			.attr("fill", function(d,i){return scaleColors[i]})
 			.attr("stroke","black")
 			.attr("stroke-width", 1);
 	
-	legend.selectAll("text")
+	legendSvg.selectAll("text")
 		.data(percents)
 		.enter()
 		.append("text")
 		.text(function(d) {return Math.round(d*100)+"%";})
-		.attr("x", function(d,i){return w/6 *i;})
-		.attr("y", function(d,i){return h-20;});
+		.attr("x", function(d,i){return 45;})
+		.attr("y", function(d,i){return h - h/6 * i-38;});
 	
 	}
 };

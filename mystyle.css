@@ -12,7 +12,13 @@ canvas{
 	background-color: transparent;
 	}
 	
+/* Legend CSS */
+.legendSVG {
+	position: absolute;
+	top: 50;
+	left: 550;
 
+}
 /* Slider CSS */
 .axis {
   font: 10px sans-serif;

@@ -288,27 +288,101 @@ function drawSideScanSonar(p,p1,color){
 		heatmap2.closePath();	
 		//heatmap2.stroke();		
 		var temp = heatmap2.getImageData(0,0,canvas2.width,canvas2.height);
-		scaleHeatMap(temp);
-
-		
+		scaleHeatMap(temp);		
 };
+
 
 function scaleHeatMap(temp){
 	samples++;
 	for (var i=0;i<image.data.length;i+=4){
 		image.data[i] = image.data[i] + temp.data[i];
-		// if(image.data[i]==255){
-			// console.log(i,samples);
-		// }
-		// image.data[i+1] = image.data[i+1] + temp.data[i+1];
-		// image.data[i+2] = image.data[i+2] + temp.data[i+2];
-		// image.data[i+3] = image.data[i+3] + temp.data[i+3];
-		// for(var j = 0; j<4;j++){
-			// image.data[i+j] = image.data[i+j] + temp.data[i+j];
-		// }
 	}
 };
 
+
+function instant(){
+	if(++last == 2){ 
+	heatmap.clearRect(0,0,canvas.width,canvas.height);
+	heatmap2.clearRect(0,0,canvas2.width,canvas2.height);
+	//Array for percentage of coverage area
+	var percents = [0,0,0,0,0,0];
+	//working version using quantize
+	var scaleColors = ["#FFFFFF","#0000FF","#FFFF00","#00FF00","#FF9900","#FF0000"];
+	var colorScale = d3.scale.quantize()
+					 .domain([0,6])
+					 .range(scaleColors);
+	for (var i=0;i<image.data.length;i+=4){
+		var col = colorScale(image.data[i]);
+		//console.log(image.data[i]);
+		for(var j = 0; j<3;j++){
+			image.data[i+j] = h2d(col.substring(2*j+1,2*j+3));
+		}
+		//Need to figure out a better way to handle alpha
+		image.data[i+3] = 200;
+		//Find out what category it falls into
+		switch(col){
+			case scaleColors[0]:
+				percents[0]++;
+				break;
+			case scaleColors[1]:
+				percents[1]++;
+				break;
+			case scaleColors[2]:
+				percents[2]++;
+				break;
+			case scaleColors[3]:
+				percents[3]++;
+				break;
+			case scaleColors[4]:
+				percents[4]++;
+				break;
+			case scaleColors[5]:
+				percents[5]++;
+				break;
+			default:
+				console.log("booo!");
+				break;
+		}
+	}
+
+	heatmap3.putImageData(image,0,0);
+	last = 0;
+	image = heatmap3.createImageData(canvas2.width,canvas2.height); 
+	}
+};
+function drawInTime(time){
+
+	var timeScale = d3.scale.linear()
+		.domain([0, 100])
+		.range([0, 1]);
+	time = timeScale(time);
+	d3.selectAll("circle")
+			.data(path)
+			.transition()
+			.duration(0)
+			.attr("transform", function(d){ 
+											var path = d.node();
+											var classList = path.classList;
+											var l = path.getTotalLength();					
+											var p = path.getPointAtLength(time * l),p1;
+											if(time-.0001 < 0){
+												p1 = path.getPointAtLength(0);
+											}else{
+												p1 = path.getPointAtLength((time-.0001) * l);
+											}
+											if(classList[1]==="fw"){
+												drawForwardSonar(p,p1,classList[2]);
+											}else if(classList[1]==="ss"){
+												drawSideScanSonar(p,p1,classList[2]);
+											}else{
+												
+											}
+											return "translate(" + p.x + "," + p.y + ")";
+											
+										})
+			.each("end",instant);
+
+};
 //Slider using Brush
 //Modified from http://bl.ocks.org/mbostock/6452972
 var width = 500,
@@ -361,12 +435,16 @@ var handle = slider.append("circle")
 
 
 function brushed() {
-  var value = brush.extent()[0];
-
-  if (d3.event.sourceEvent) { // not a programmatic event
-    value = x.invert(d3.mouse(this)[0]);
-    brush.extent([value, value]);
-  }
-
-  handle.attr("cx", x(value));
+	var value = brush.extent()[0];
+	if (d3.event.sourceEvent) { // not a programmatic event
+		value = x.invert(d3.mouse(this)[0]);
+		brush.extent([value, value]);
+	}
+	if(last>=2){
+		d3.select(".legendSVG").remove();
+		last = 0;
+		image = heatmap3.createImageData(canvas2.width,canvas2.height); 
+	}
+	handle.attr("cx", x(value));
+	drawInTime(value);
 }

@@ -306,3 +306,65 @@ function scaleHeatMap(temp){
 		// }
 	}
 };
+
+//Slider using Brush
+//Modified from http://bl.ocks.org/mbostock/6452972
+var width = 500,
+    height = 100;
+
+var x = d3.scale.linear()
+    .domain([0, 100])
+    .range([25, 475])
+    .clamp(true);
+
+var brush = d3.svg.brush()
+    .x(x)
+    .extent([0, 0])
+    .on("brush", brushed);
+
+var sliderSvg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height)
+	.attr("class", "sliderSVG");
+
+sliderSvg.append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + height / 2 + ")")
+    .call(d3.svg.axis()
+      .scale(x)
+      .orient("bottom")
+      .tickFormat(function(d) { return d + "%"; })
+      .tickSize(0)
+      .tickPadding(12))
+  .select(".domain")
+  .select(function() { return this.parentNode.appendChild(this.cloneNode(true)); })
+    .attr("class", "halo");
+
+var slider = sliderSvg.append("g")
+    .attr("class", "slider")
+    .call(brush);
+
+slider.selectAll(".extent,.resize")
+    .remove();
+
+slider.select(".background")
+    .attr("height", height)
+	.attr("x",25);
+
+var handle = slider.append("circle")
+    .attr("class", "handle")
+    .attr("transform", "translate(0," + height / 2 + ")")
+    .attr("r", 9)
+	.attr("cx",25);
+
+
+function brushed() {
+  var value = brush.extent()[0];
+
+  if (d3.event.sourceEvent) { // not a programmatic event
+    value = x.invert(d3.mouse(this)[0]);
+    brush.extent([value, value]);
+  }
+
+  handle.attr("cx", x(value));
+}

@@ -116,33 +116,7 @@ function finish(){
 	if(++last == 2){ 
 	heatmap.clearRect(0,0,canvas.width,canvas.height);
 	heatmap2.clearRect(0,0,canvas2.width,canvas2.height);
-	//Find min and max, not sure if I really need this
-	max= 0;
-	min= 255;	
-	for (var i=image.data.length;i>0;i-=4){
-		
-		if(image.data[i]>max){
-			max = image.data[i];
-		}
-		if(image.data[i+3]<min){
-			min = image.data[i];
-		}
-		
-	}
-	//working version using linear, using two scales
-	// var imageDataScale = d3.scale.linear()
-				// .domain([0,255])
-				// .range([0,5]);
-	// var colorScale = d3.scale.linear()
-					 // .domain([0,1,2,3,4,5])
-					 // .range(["white","blue","yellow","green","orange","red"]);
-	// for (var i=0;i<image.data.length;i+=4){
-		// var col = colorScale(imageDataScale(image.data[i]));
-		// for(var j = 0; j<3;j++){
-			// image.data[i+j] = h2d(col.substring(2*j+1,2*j+3));
-		// }		
-		// image.data[i+3] = 200;		
-	// }
+	var imageData = image.data;	//It's faster to work with a reference
 	//Array for percentage of coverage area
 	var percents = [0,0,0,0,0,0];
 	//working version using quantize
@@ -150,14 +124,13 @@ function finish(){
 	var colorScale = d3.scale.quantize()
 					 .domain([0,255])
 					 .range(scaleColors);
-	for (var i=0;i<image.data.length;i+=4){
-		var col = colorScale(image.data[i]);
-		//console.log(image.data[i]);
+	for (var i=0;i<imageData.length;i+=4){
+		var col = colorScale(imageData[i]);
 		for(var j = 0; j<3;j++){
-			image.data[i+j] = h2d(col.substring(2*j+1,2*j+3));
+			imageData[i+j] = h2d(col.substring(2*j+1,2*j+3));
 		}
 		//Need to figure out a better way to handle alpha
-		image.data[i+3] = 200;
+		imageData[i+3] = 200;
 		//Find out what category it falls into
 		switch(col){
 			case scaleColors[0]:
@@ -183,22 +156,15 @@ function finish(){
 				break;
 		}
 	}
-	//Check to make sure string is parsed correctly
-	// for(var j = 0; j<3;j++){
-		// console.log(col.substring(2*j+1,2*j+3));
-		// console.log(h2d(col.substring(2*j+1,2*j+3)));
-	// }
+
 	//Get percentages of coverage area
 	var total = 0;
 	for(i=0; i< percents.length;i++){
-		percents[i] = percents[i]/(image.data.length/4);
+		percents[i] = percents[i]/(imageData.length/4);
 		total +=percents[i];		
-		//console.log(percents[i]);
 	}
-	//Checking output
-	// console.log(total);
-	// console.log(min,max);
-	// console.log(samples);
+
+	image.data = imageData;
 	heatmap3.putImageData(image,0,0);
 	//Create heatmap legend
 	var legendSvg = d3.select("body")
@@ -294,9 +260,11 @@ function drawSideScanSonar(p,p1,color){
 
 function scaleHeatMap(temp){
 	samples++;
-	for (var i=0;i<image.data.length;i+=4){
-		image.data[i] = image.data[i] + temp.data[i];
+	var imageData = image.data, tempData = temp.data;
+	for (var i=0;i<imageData.length;i+=4){
+		imageData[i] = imageData[i] + tempData[i];
 	}
+	image.data = imageData;
 };
 
 
@@ -304,6 +272,7 @@ function instant(){
 	if(++last == 2){ 
 	heatmap.clearRect(0,0,canvas.width,canvas.height);
 	heatmap2.clearRect(0,0,canvas2.width,canvas2.height);
+	var imageData = image.data;	//It's faster to work with a reference
 	//Array for percentage of coverage area
 	var percents = [0,0,0,0,0,0];
 	//working version using quantize
@@ -311,14 +280,14 @@ function instant(){
 	var colorScale = d3.scale.quantize()
 					 .domain([0,6])
 					 .range(scaleColors);
-	for (var i=0;i<image.data.length;i+=4){
-		var col = colorScale(image.data[i]);
+	for (var i=0;i<imageData.length;i+=4){
+		var col = colorScale(imageData[i]);
 		//console.log(image.data[i]);
 		for(var j = 0; j<3;j++){
-			image.data[i+j] = h2d(col.substring(2*j+1,2*j+3));
+			imageData[i+j] = h2d(col.substring(2*j+1,2*j+3));
 		}
 		//Need to figure out a better way to handle alpha
-		image.data[i+3] = 200;
+		imageData[i+3] = 200;
 		//Find out what category it falls into
 		switch(col){
 			case scaleColors[0]:
@@ -344,7 +313,7 @@ function instant(){
 				break;
 		}
 	}
-
+	image.data = imageData;
 	heatmap3.putImageData(image,0,0);
 	last = 0;
 	image = heatmap3.createImageData(canvas2.width,canvas2.height); 

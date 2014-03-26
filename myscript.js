@@ -10,8 +10,8 @@ var yscale = d3.scale.linear()
 					 .range([0,h]);
 					 					 
 var timeScale = d3.scale.linear()
-				 .domain([0,1])
-				 .range([0,255]);
+				.domain([0, 100])
+				.range([0, 1]);
 
 var svgContainer = d3.select("body")
 			.append("svg")
@@ -109,7 +109,7 @@ function transition() {
 											return "translate(" + p.x + "," + p.y + ")";
 										}
 									})									
-		.each("end", finish);		
+		.each("end",finish);
 }
 
 function finish(){
@@ -269,7 +269,6 @@ function scaleHeatMap(temp){
 
 
 function instant(){
-	if(++last == 2){ 
 	heatmap.clearRect(0,0,canvas.width,canvas.height);
 	heatmap2.clearRect(0,0,canvas2.width,canvas2.height);
 	var imageData = image.data;	//It's faster to work with a reference
@@ -317,13 +316,8 @@ function instant(){
 	heatmap3.putImageData(image,0,0);
 	last = 0;
 	image = heatmap3.createImageData(canvas2.width,canvas2.height); 
-	}
 };
 function drawInTime(time){
-
-	var timeScale = d3.scale.linear()
-		.domain([0, 100])
-		.range([0, 1]);
 	time = timeScale(time);
 	d3.selectAll("circle")
 			.data(path)
@@ -348,8 +342,8 @@ function drawInTime(time){
 											}
 											return "translate(" + p.x + "," + p.y + ")";
 											
-										})
-			.each("end",instant);
+										});
+	instant();
 
 };
 //Slider using Brush

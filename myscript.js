@@ -394,8 +394,9 @@ var handle = slider.append("circle")
     .attr("class", "handle")
     .attr("transform", "translate(0," + height / 2 + ")")
     .attr("r", 9)
-	.attr("cx",25);
-
+	.attr("cx",25)
+	.on("dbclick",function(d){alert("double click");});
+	
 function brushed() {
 	var value = brush.extent()[0];
 	//console.log(d3.event.sourceEvent);

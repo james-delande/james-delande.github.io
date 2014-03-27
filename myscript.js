@@ -193,7 +193,7 @@ function finish(){
 		.attr("x", function(d,i){return 45;})
 		.attr("y", function(d,i){return h - h/6 * i-38;});
 	
-	}
+	};
 };
 
 //convert hex to decimal
@@ -268,7 +268,7 @@ function scaleHeatMap(temp){
 };
 
 
-function instant(){
+function instant(count){
 	heatmap.clearRect(0,0,canvas.width,canvas.height);
 	heatmap2.clearRect(0,0,canvas2.width,canvas2.height);
 	var imageData = image.data;	//It's faster to work with a reference
@@ -280,7 +280,7 @@ function instant(){
 					 .domain([0,6])
 					 .range(scaleColors);
 	for (var i=0;i<imageData.length;i+=4){
-		var col = colorScale(imageData[i]);
+		var col = colorScale(imageData[i]/count);
 		//console.log(image.data[i]);
 		for(var j = 0; j<3;j++){
 			imageData[i+j] = h2d(col.substring(2*j+1,2*j+3));
@@ -316,9 +316,10 @@ function instant(){
 	heatmap3.putImageData(image,0,0);
 	last = 0;
 	image = heatmap3.createImageData(canvas2.width,canvas2.height); 
+
 };
-function drawInTime(time){
-	time = timeScale(time);
+function drawInTime(start, end){
+var count = 0;
 	d3.selectAll("circle")
 			.data(path)
 			.transition()
@@ -326,24 +327,30 @@ function drawInTime(time){
 			.attr("transform", function(d){ 
 											var path = d.node();
 											var classList = path.classList;
-											var l = path.getTotalLength();					
-											var p = path.getPointAtLength(time * l),p1;
-											if(time-.0001 < 0){
-												p1 = path.getPointAtLength(0);
-											}else{
-												p1 = path.getPointAtLength((time-.0001) * l);
+											var l = path.getTotalLength();
+											var p,p1;
+											console.log(timeScale(start),timeScale(end));
+											for(time=timeScale(start);time<=timeScale(end);time+=.01){
+												p = path.getPointAtLength(time * l);
+												if(time-.0001 < 0){
+													p1 = path.getPointAtLength(0);
+												}else{
+													p1 = path.getPointAtLength((time-.0001) * l);
+												}
+												if(classList[1]==="fw"){
+													drawForwardSonar(p,p1,classList[2]);
+												}else if(classList[1]==="ss"){
+													drawSideScanSonar(p,p1,classList[2]);
+												}
+												count++;
 											}
-											if(classList[1]==="fw"){
-												drawForwardSonar(p,p1,classList[2]);
-											}else if(classList[1]==="ss"){
-												drawSideScanSonar(p,p1,classList[2]);
-											}else{
-												
-											}
+											
+											p = path.getPointAtLength(timeScale(end)*l);
 											return "translate(" + p.x + "," + p.y + ")";
 											
 										});
-	instant();
+	console.log(count);
+	instant(count/2);
 
 };
 //Slider using Brush
@@ -354,7 +361,8 @@ var width = 500,
 var x = d3.scale.linear()
 	.domain([0, 100])
 	.range([25, 475])
-	.clamp(true);	
+	.clamp(true);
+	
 singleSlider(15);
 function singleSlider(loc){	
 	var brush = d3.svg.brush()
@@ -411,7 +419,7 @@ function singleSlider(loc){
 			image = heatmap3.createImageData(canvas2.width,canvas2.height); 
 		}
 		handle.attr("cx", x(value));
-		drawInTime(value);
+		drawInTime(value,value);
 	}	
 };
 
@@ -471,13 +479,13 @@ function doubleSlider(loc){
 	};
 
 	function brushmove() {
-	  var s = brush.extent();
-		//console.log(s);
-		drawInTime(s[0]);
+
 	  //circle.classed("selected", function(d) { return s[0] <= d && d <= s[1]; });  
 	};
 
 	function brushend() {
-	  
+		var s = brush.extent();
+		//console.log(s);
+		drawInTime(s[0],s[1]);
 	};
 };

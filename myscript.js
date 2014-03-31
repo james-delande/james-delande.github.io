@@ -280,7 +280,7 @@ function instant(count){
 					 .domain([0,6])
 					 .range(scaleColors);
 	for (var i=0;i<imageData.length;i+=4){
-		var col = colorScale(imageData[i]/count);
+		var col = colorScale(Math.round((imageData[i]/count)*6));
 		//console.log(image.data[i]);
 		for(var j = 0; j<3;j++){
 			imageData[i+j] = h2d(col.substring(2*j+1,2*j+3));

@@ -12,6 +12,8 @@ var yscale = d3.scale.linear()
 var timeScale = d3.scale.linear()
 				.domain([0, 100])
 				.range([0, 1]);
+				
+var scaleColors = ["#FFFFFF","#0000FF","#FFFF00","#00FF00","#FF9900","#FF0000"];
 
 var svgContainer = d3.select("body")
 			.append("svg")
@@ -140,24 +142,37 @@ function transition() {
 											}
 											return "translate(" + p.x + "," + p.y + ")";
 										}
-									})									
-		.each("end",finish);
+									})
+		.each("end",function(d,i){if(i===(path.length-1)){finish()}});
 }
 
 function finish(){
-	if(++last == 2){ 
+		var colorScale = d3.scale.quantize()
+						 .domain([0,255])
+						 .range(scaleColors);
+		drawHeatMap(colorScale,6);				 
+		draggable = true;//Now we can allow dragging again
+
+};
+
+function drawHeatMap(colorScale,count){
 	heatmap.clearRect(0,0,canvas.width,canvas.height);
 	heatmap2.clearRect(0,0,canvas2.width,canvas2.height);
 	var imageData = image.data;	//It's faster to work with a reference
 	//Array for percentage of coverage area
 	var percents = [0,0,0,0,0,0];
-	//working version using quantize
-	var scaleColors = ["#FFFFFF","#0000FF","#FFFF00","#00FF00","#FF9900","#FF0000"];
-	var colorScale = d3.scale.quantize()
-					 .domain([0,255])
-					 .range(scaleColors);
+	var max= 0,	min= 255;	
+	for (var i=0;i<imageData.length;i+=4){		
+		if(imageData[i]>max){
+			max = imageData[i];
+		}
+		if(imageData[i]<min){
+			min = imageData[i];
+		}		
+	}
+	console.log(min, max);
 	for (var i=0;i<imageData.length;i+=4){
-		var col = colorScale(imageData[i]);
+		var col = colorScale((imageData[i]/count)*6);
 		for(var j = 0; j<3;j++){
 			imageData[i+j] = h2d(col.substring(2*j+1,2*j+3));
 		}
@@ -195,10 +210,13 @@ function finish(){
 		percents[i] = percents[i]/(imageData.length/4);
 		total +=percents[i];		
 	}
-
 	image.data = imageData;
 	heatmap3.putImageData(image,0,0);
-	//Create heatmap legend
+	drawLegend(percents);
+
+};
+//Create heatmap legend
+function drawLegend(percents){
 	var legendSvg = d3.select("body")
 			.append("svg")
 			.attr("width",100)
@@ -224,12 +242,55 @@ function finish(){
 		.text(function(d) {return Math.round(d*100)+"%";})
 		.attr("x", function(d,i){return 45;})
 		.attr("y", function(d,i){return h - h/6 * i-38;});
-	draggable = true;
-	};
-};
-
+}
 //convert hex to decimal
-function h2d(h) {return parseInt(h,16);} 
+function h2d(h) {return parseInt(h,16);};
+
+function instant(count){
+	console.log(count);
+	var colorScale = d3.scale.quantize()
+					 .domain([0,6])
+					 .range(scaleColors);
+	drawHeatMap(colorScale,count);
+	//image = heatmap3.createImageData(canvas2.width,canvas2.height); 
+};
+function drawInTime(start, end){
+	var count = 0;
+	clearAll();
+	d3.selectAll(".vehicle")
+			.data(path)
+			.transition()
+			.duration(0)
+			.attr("transform", function(d){ 
+											var path = d.node();
+											var classList = path.classList;
+											//console.log(path.classList);
+											var l = path.getTotalLength();
+											var p,p1;
+											//console.log(timeScale(start),timeScale(end));
+											for(time=timeScale(start);time<=timeScale(end);time+=.01){
+												p = path.getPointAtLength(time * l);
+												if(time-.0001 < 0){
+													p1 = path.getPointAtLength(0);
+												}else{
+													p1 = path.getPointAtLength((time-.0001) * l);
+												}
+												if(classList[1]==="fw"){
+													drawForwardSonar(p,p1,classList[2]);
+												}else if(classList[1]==="ss"){
+													drawSideScanSonar(p,p1,classList[2]);
+												}else{
+													console.log("fail");
+												}
+												count++;
+											}
+											
+											p = path.getPointAtLength(timeScale(end)*l);
+											return "translate(" + p.x + "," + p.y + ")";							
+										})
+			.each("end",function(d,i){if(i===(path.length-1)){instant(count/2)}});			
+};	
+singleSlider(15);
 
 function drawForwardSonar(p,p1,color){		
 		heatmap.clearRect(0,0,canvas.width,canvas.height);
@@ -242,7 +303,6 @@ function drawForwardSonar(p,p1,color){
 			}
 			console.log(heading);
 		}
-
 		var center = [p.x+sonarRange * Math.cos(heading), p.y+sonarRange * Math.sin(heading)];
 		heatmap.fillStyle =  "rgba(1,1,1,1)";
 		//heatmap.globalAlpha=.5;
@@ -289,103 +349,13 @@ function drawSideScanSonar(p,p1,color){
 		scaleHeatMap(temp);		
 };
 
-
 function scaleHeatMap(temp){
 	samples++;
 	var imageData = image.data, tempData = temp.data;
 	for (var i=0;i<imageData.length;i+=4){
-		imageData[i] = imageData[i] + tempData[i];
-	}
-	image.data = imageData;
-};
-
-
-function instant(count){
-	heatmap.clearRect(0,0,canvas.width,canvas.height);
-	heatmap2.clearRect(0,0,canvas2.width,canvas2.height);
-	var imageData = image.data;	//It's faster to work with a reference
-	//Array for percentage of coverage area
-	var percents = [0,0,0,0,0,0];
-	//working version using quantize
-	var scaleColors = ["#FFFFFF","#0000FF","#FFFF00","#00FF00","#FF9900","#FF0000"];
-	var colorScale = d3.scale.quantize()
-					 .domain([0,6])
-					 .range(scaleColors);
-	for (var i=0;i<imageData.length;i+=4){
-		var col = colorScale(Math.round((imageData[i]/count)*6));
-		for(var j = 0; j<3;j++){
-			imageData[i+j] = h2d(col.substring(2*j+1,2*j+3));
-		}
-		//Need to figure out a better way to handle alpha
-		imageData[i+3] = 200;
-		//Find out what category it falls into
-		switch(col){
-			case scaleColors[0]:
-				percents[0]++;
-				break;
-			case scaleColors[1]:
-				percents[1]++;
-				break;
-			case scaleColors[2]:
-				percents[2]++;
-				break;
-			case scaleColors[3]:
-				percents[3]++;
-				break;
-			case scaleColors[4]:
-				percents[4]++;
-				break;
-			case scaleColors[5]:
-				percents[5]++;
-				break;
-			default:
-				console.log("booo!");
-				break;
+		if(tempData[i]!=0){
+			imageData[i] = imageData[i] + 1;
 		}
 	}
 	image.data = imageData;
-	heatmap3.putImageData(image,0,0);
-	last = 0;
-	image = heatmap3.createImageData(canvas2.width,canvas2.height); 
-
 };
-function drawInTime(start, end){
-var count = 0;
-	d3.selectAll(".vehicle")
-			.data(path)
-			.transition()
-			.duration(0)
-			.attr("transform", function(d){ 
-											var path = d.node();
-											var classList = path.classList;
-											//console.log(path.classList);
-											var l = path.getTotalLength();
-											var p,p1;
-											//console.log(timeScale(start),timeScale(end));
-											for(time=timeScale(start);time<=timeScale(end);time+=.01){
-												p = path.getPointAtLength(time * l);
-												if(time-.0001 < 0){
-													p1 = path.getPointAtLength(0);
-												}else{
-													p1 = path.getPointAtLength((time-.0001) * l);
-												}
-												if(classList[1]==="fw"){
-													drawForwardSonar(p,p1,classList[2]);
-												}else if(classList[1]==="ss"){
-													drawSideScanSonar(p,p1,classList[2]);
-												}else{
-													console.log("fail");
-												}
-												count++;
-											}
-											
-											p = path.getPointAtLength(timeScale(end)*l);
-											return "translate(" + p.x + "," + p.y + ")";
-											
-										});
-	//console.log(count);
-	instant(count/2);
-
-};	
-singleSlider(15);
-

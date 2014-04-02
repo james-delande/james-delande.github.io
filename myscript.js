@@ -72,7 +72,15 @@ for(i=0;i<lineData.length;i++){
 					.attr("fill", colors[i])
 					.attr("r", 5)
 					.attr("transform","translate("+[xscale(lineData[i][0].x), yscale(lineData[i][0].y)] + ")"));
-
+	//Puts circles at the points in the path	
+	svgContainer.selectAll(".point")
+		.data(lineData[i])
+	  .enter().append("circle")
+		.attr("class", "path"+i)
+		.attr("r", 3)
+		.attr("fill",colors[i])
+		.attr("stroke","black")
+		.attr("transform", function(d) { return "translate(" + [xscale(d.x), yscale(d.y)] + ")"; });
 }
 
 //transition();

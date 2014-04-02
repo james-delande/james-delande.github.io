@@ -1,6 +1,6 @@
 svg, canvas {	
 	position: absolute;
-	top: 0;
+	top: 50;
 	left: 50;
 	}	
 	
@@ -44,7 +44,7 @@ canvas{
 
 .sliderSVG {
 	position: absolute;
-	top: 500;
+	top: 550;
 	left: 50;
 } 
 

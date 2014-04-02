@@ -34,7 +34,7 @@ heatmap3 = canvas3.getContext('2d');
 var image = heatmap3.createImageData(canvas2.width,canvas2.height); 
 
 var sonarRange = 100, sonarAngle = Math.PI/4,
-	last = 0, samples=0;
+	last = 0, samples=0, draggable = true;
 
 var lineData = new Array();
 	lineData.push([{ "x": 0,   "y": 500},  { "x": 200,  "y": 500},
@@ -54,7 +54,25 @@ var colors = new Array();
 var sonarType = new Array();
 	sonarType.push("fw");
 	sonarType.push("ss");
-
+	
+var drag = d3.behavior.drag()
+	.on("drag", function(d,i) {
+	//only drag if it is allowed at the time
+	if(draggable){
+		var path = this.classList[0].slice(-1); //Path number we are working with
+		d.x = Math.max(0, Math.min(w, d3.event.x));
+		d.y = Math.max(0, Math.min(h, d3.event.y));
+		//set point location
+		d3.select(this).attr("transform", "translate(" + [ d.x,d.y ] + ")")
+		//Now working with rest of line data, need to invert to SVG coordinate system for continuity
+		d.x = xscale.invert(d.x);
+		d.y = yscale.invert(d.y);
+		//Update path with new line data
+		d3.selectAll(".path"+path).attr("d", lineFunction(lineData[path]));
+		//Update vehicle location if starting point moves
+		d3.selectAll(".UUV"+path).attr("transform","translate("+[xscale(lineData[path][0].x), yscale(lineData[path][0].y)] + ")");
+	}
+});	
 //The line SVG Path we draw
 var path = new Array();
 var circle = new Array();
@@ -76,20 +94,26 @@ for(i=0;i<lineData.length;i++){
 	svgContainer.selectAll(".point")
 		.data(lineData[i])
 	  .enter().append("circle")
-		.attr("class", "path"+i)
+		.attr("class", function(d,n){return "path"+i + " point"+n})
 		.attr("r", 3)
 		.attr("fill",colors[i])
 		.attr("stroke","black")
-		.attr("transform", function(d) { return "translate(" + [xscale(d.x), yscale(d.y)] + ")"; });
+		.attr("transform", function(d) { return "translate(" + [xscale(d.x), yscale(d.y)] + ")"; })
+		.call(drag);
 }
 
 //transition();
-						
-
-
-
+function clearAll(){
+	heatmap.clearRect(0,0,canvas.width,canvas.height);
+	heatmap2.clearRect(0,0,canvas2.width,canvas2.height);
+	heatmap3.clearRect(0,0,canvas3.width,canvas3.height);
+	image = heatmap3.createImageData(canvas2.width,canvas2.height);
+	d3.select(".legendSVG").remove();
+	last = 0;
+}
 function transition() {
-	
+	clearAll();
+	draggable = false; //Don't allow path dragging during transition
 	d3.selectAll(".vehicle")
 		.data(path)
 		.transition()
@@ -200,7 +224,7 @@ function finish(){
 		.text(function(d) {return Math.round(d*100)+"%";})
 		.attr("x", function(d,i){return 45;})
 		.attr("y", function(d,i){return h - h/6 * i-38;});
-	
+	draggable = true;
 	};
 };
 
@@ -359,7 +383,7 @@ var count = 0;
 											return "translate(" + p.x + "," + p.y + ")";
 											
 										});
-	console.log(count);
+	//console.log(count);
 	instant(count/2);
 
 };	

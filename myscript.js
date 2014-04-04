@@ -57,7 +57,7 @@ var sonarType = new Array();
 	sonarType.push("fw");
 	sonarType.push("ss");
 	
-var drag = d3.behavior.drag()
+var dragPoint = d3.behavior.drag()
 	.on("drag", function(d,i) {
 	//only drag if it is allowed at the time
 	if(draggable){
@@ -101,15 +101,14 @@ for(i=0;i<lineData.length;i++){
 		.attr("fill",colors[i])
 		.attr("stroke","black")
 		.attr("transform", function(d) { return "translate(" + [xscale(d.x), yscale(d.y)] + ")"; })
-		.call(drag);
+		.call(dragPoint);
 }
 
-//transition();
 function clearAll(){
 	heatmap.clearRect(0,0,canvas.width,canvas.height);
 	heatmap2.clearRect(0,0,canvas2.width,canvas2.height);
 	heatmap3.clearRect(0,0,canvas3.width,canvas3.height);
-	image = heatmap3.createImageData(canvas2.width,canvas2.height);
+	image = heatmap3.createImageData(canvas3.width,canvas3.height);
 	d3.select(".legendSVG").remove();
 	last = 0;
 }
@@ -175,8 +174,11 @@ function drawHeatMap(colorScale,count){
 		}		
 	}
 	console.log(min, max);
+	if(count === 1){
+		max = 6;
+	}
 	for (var i=0;i<imageData.length;i+=4){
-		var col = colorScale((imageData[i]/count)*6);
+		var col = colorScale(Math.round((imageData[i]/max)*6));
 		for(var j = 0; j<3;j++){
 			imageData[i+j] = h2d(col.substring(2*j+1,2*j+3));
 		}

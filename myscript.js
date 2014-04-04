@@ -107,16 +107,26 @@ for(i=0;i<lineData.length;i++){
 	var xRotate = Math.floor(bbox.x + bbox.width/2.0)
 	var yRotate = Math.floor(bbox.y + bbox.height/2.0)
 	svgContainer.append("rect")
-			.attr("class",function(d,n){return "path"+i + " center"+n})
-			.attr("x",xRotate)
-			.attr("y",yRotate)
+			.attr("class", "path"+i + " center"+i)
+			.attr("x",xRotate-4)
+			.attr("y",yRotate-4)
 			.attr("width",8)
 			.attr("height",8)
 			.attr("fill", colors[i])
 			.attr("stroke","black")
-			.attr("transform","translate(-4,-4)");
+			.on("mousedown", function(){
+              d3.select(this)
+                  .attr("transform", function(){
+					var x = parseFloat(d3.select(this).attr("x")) + 4;
+					var y = parseFloat(d3.select(this).attr("y")) + 4;
+					rotation+=15;
+					return "rotate("+ rotation +","+x+","+y+")";
+					})
+            });
+
 }
 
+var rotation = 0;
 function clearAll(){
 	heatmap.clearRect(0,0,canvas.width,canvas.height);
 	heatmap2.clearRect(0,0,canvas2.width,canvas2.height);

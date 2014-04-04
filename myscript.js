@@ -102,6 +102,19 @@ for(i=0;i<lineData.length;i++){
 		.attr("stroke","black")
 		.attr("transform", function(d) { return "translate(" + [xscale(d.x), yscale(d.y)] + ")"; })
 		.call(dragPoint);
+		
+	var bbox = path[i].node().getBBox(); 
+	var xRotate = Math.floor(bbox.x + bbox.width/2.0)
+	var yRotate = Math.floor(bbox.y + bbox.height/2.0)
+	svgContainer.append("rect")
+			.attr("class",function(d,n){return "path"+i + " center"+n})
+			.attr("x",xRotate)
+			.attr("y",yRotate)
+			.attr("width",8)
+			.attr("height",8)
+			.attr("fill", colors[i])
+			.attr("stroke","black")
+			.attr("transform","translate(-4,-4)");
 }
 
 function clearAll(){

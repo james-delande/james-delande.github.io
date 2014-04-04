@@ -57,11 +57,6 @@ function singleSlider(loc){
 			value = x.invert(d3.mouse(this)[0]);
 			brush.extent([value, value]);
 		}
-		if(last>=2){
-			d3.select(".legendSVG").remove();
-			last = 0;
-			image = heatmap3.createImageData(canvas2.width,canvas2.height); 
-		}
 		handle.attr("cx", x(value));
 		drawInTime(value,value);
 	}	

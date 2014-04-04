@@ -17,11 +17,11 @@ function singleSlider(loc){
 	var sliderSvg = d3.select("body").append("svg")
 		.attr("width", width)
 		.attr("height", height)
-		.attr("class", "sliderSVG")	
+		.attr("class", "sliderSVG slider")	
 		.on("dblclick",function(d){ doubleSlider(brush.extent()[0]);this.remove();});
 
 	sliderSvg.append("g")
-		.attr("class", "x axis")
+		.attr("class", "x axis slider")
 		.attr("transform", "translate(0," + height / 2 + ")")
 		.call(d3.svg.axis()
 		  .scale(x)
@@ -85,7 +85,7 @@ function doubleSlider(loc){
 	var sliderSvg = d3.select("body").append("svg")
 		.attr("width", width)
 		.attr("height", height)
-		.attr("class", "sliderSVG")
+		.attr("class", "sliderSVG slider")
 		.on("dblclick",function(d){singleSlider(brush.extent()[0]);this.remove(); });;
 
 	sliderSvg.append("g")
@@ -104,7 +104,7 @@ function doubleSlider(loc){
 
 
 	var brushg = sliderSvg.append("g")
-		.attr("class", "brush")
+		.attr("class", "brush slider")
 		.call(brush);
 
 	brushg.selectAll(".resize").append("path")

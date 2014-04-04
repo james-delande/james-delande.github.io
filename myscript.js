@@ -114,6 +114,8 @@ function clearAll(){
 	last = 0;
 }
 function transition() {
+	document.getElementById("transition").disabled = true;
+	d3.selectAll(".slider").style("pointer-events","none");
 	clearAll();
 	draggable = false; //Don't allow path dragging during transition
 	d3.selectAll(".vehicle")
@@ -144,15 +146,17 @@ function transition() {
 										}
 									})
 		.each("end",function(d,i){if(i===(path.length-1)){finish()}});
+		
 }
 
 function finish(){
 		var colorScale = d3.scale.quantize()
 						 .domain([0,255])
 						 .range(scaleColors);
-		drawHeatMap(colorScale,6);				 
+		drawHeatMap(colorScale,6);
+		document.getElementById("transition").disabled = false;
+		d3.selectAll(".slider").style("pointer-events","auto");
 		draggable = true;//Now we can allow dragging again
-
 };
 
 function drawHeatMap(colorScale,count){

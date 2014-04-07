@@ -58,7 +58,7 @@ var sonarType = new Array();
 	sonarType.push("ss");
 	
 var dragPoint = d3.behavior.drag()
-	.on("drag", function(d,i) {	
+	.on("drag", function(d,i) {
 	//only drag if it is allowed at the time
 	if(draggable){
 		console.log(this);
@@ -127,7 +127,7 @@ function drawBox(i){
 			.attr("stroke","black")
 			.on("mousedown", function(){
 					if(draggable){
-						console.log(d3.event);
+						//console.log(d3.event);
 						var x = parseFloat(d3.select(this).attr("x")) + 4;
 						var y = parseFloat(d3.select(this).attr("y")) + 4;
 						rotation+=15;
@@ -138,7 +138,6 @@ function drawBox(i){
 };
 
 function rotatePath(i,x,y){
-console.log(i,x,y);
 d3.selectAll(".group"+i)
 				.attr("transform", function(){
 					return "rotate("+ rotation +","+x+","+y+")";
@@ -160,28 +159,23 @@ function transition() {
 	d3.selectAll(".slider").style("pointer-events","none");
 	clearAll();
 	draggable = false; //Don't allow path dragging during transition
-	console.log(d3.selectAll(".paths"));
 	d3.selectAll(".vehicle")
 		.data(function(){
-				var all = d3.selectAll(".paths"); 
+				var all = d3.selectAll(".paths")[0]; 
 				var path = new Array();
 				for(var k = 0; k < all.length;k++){
-					console.log(all[k]);
 					path.push(all[k]);
 				}
-				console.log(path);
 				return path;
 				})
 		.transition()
 		.duration(10000)
 		.ease("linear")
 		.attrTween("transform", function(d,n){ // Returns an attrTween for translating along the specified path element.
-										console.log(d);
-										var path = d[n];
-										console.log(path.classList);
+										var path = d;
 										var classList = path.classList;
 										var l = path.getTotalLength();
-										return function(t) {												
+										return function(t) {									
 											var p = path.getPointAtLength(t * l),p1;
 											if(t-.0001 < 0){
 												p1 = path.getPointAtLength(0);
@@ -195,16 +189,15 @@ function transition() {
 											}else{
 												console.log("n = "+n);
 											}
-											return "translate(" + p.x + "," + p.y + ")";
+											return "translate("+[(p.x-xscale(lineData[n][0].x)), (p.y - yscale(lineData[n][0].y))] + ")";
 										}
 									})
-		.each("end",function(d,i){console.log("in each i = "+i);if(i===(1)){console.log("finish");finish()}});
-	console.log("out of transition");
+		.each("end",function(d,i){if(i===(sonarType.length-1)){finish()}});
 };
 
 function finish(){
 		var colorScale = d3.scale.quantize()
-						 .domain([0,255])
+						 .domain([0,6])
 						 .range(scaleColors);
 		drawHeatMap(colorScale,6);
 		document.getElementById("transition").disabled = false;
@@ -263,13 +256,14 @@ function drawHeatMap(colorScale,count){
 				break;
 		}
 	}
-
+	
 	//Get percentages of coverage area
 	var total = 0;
 	for(i=0; i< percents.length;i++){
 		percents[i] = percents[i]/(imageData.length/4);
 		total +=percents[i];		
 	}
+	console.log(percents);
 	image.data = imageData;
 	heatmap3.putImageData(image,0,0);
 	drawLegend(percents);
@@ -299,7 +293,7 @@ function drawLegend(percents){
 		.data(percents)
 		.enter()
 		.append("text")
-		.text(function(d) {return Math.round(d*100)+"%";})
+		.text(function(d) {return (d*100).toFixed(2)+"%";})
 		.attr("x", function(d,i){return 45;})
 		.attr("y", function(d,i){return h - h/6 * i-38;});
 }
@@ -307,7 +301,6 @@ function drawLegend(percents){
 function h2d(h) {return parseInt(h,16);};
 
 function instant(count){
-	console.log(count);
 	var colorScale = d3.scale.quantize()
 					 .domain([0,6])
 					 .range(scaleColors);
@@ -318,11 +311,18 @@ function drawInTime(start, end){
 	var count = 0;
 	clearAll();
 	d3.selectAll(".vehicle")
-			.data(path)
+			.data(function(){
+				var all = d3.selectAll(".paths")[0]; 
+				var path = new Array();
+				for(var k = 0; k < all.length;k++){
+					path.push(all[k]);
+				}
+				return path;
+				})
 			.transition()
 			.duration(0)
-			.attr("transform", function(d){ 
-											var path = d.node();
+			.attr("transform", function(d,n){ 
+											var path = d;
 											var classList = path.classList;
 											//console.log(path.classList);
 											var l = path.getTotalLength();
@@ -335,9 +335,9 @@ function drawInTime(start, end){
 												}else{
 													p1 = path.getPointAtLength((time-.0001) * l);
 												}
-												if(classList[1]==="fw"){
+												if(sonarType[n]==="fw"){
 													drawForwardSonar(p,p1,classList[2]);
-												}else if(classList[1]==="ss"){
+												}else if(sonarType[n]==="ss"){
 													drawSideScanSonar(p,p1,classList[2]);
 												}else{
 													console.log("fail");
@@ -346,9 +346,9 @@ function drawInTime(start, end){
 											}
 											
 											p = path.getPointAtLength(timeScale(end)*l);
-											return "translate(" + p.x + "," + p.y + ")";							
+											return "translate("+[(p.x-xscale(lineData[n][0].x)), (p.y - yscale(lineData[n][0].y))] + ")";							
 										})
-			.each("end",function(d,i){if(i===(path.length-1)){instant(count/2)}});			
+			.each("end",function(d,i){if(i===(sonarType.length-1)){instant(count/2)}});			
 };	
 singleSlider(15);
 
@@ -379,6 +379,7 @@ function drawForwardSonar(p,p1,color){
 
 function drawSideScanSonar(p,p1,color){
 		//console.log(color);
+		//console.log(p);
 		heatmap2.clearRect(0,0,canvas2.width,canvas2.height);
 		var heading = Math.atan2((p.y-p1.y),(p.x-p1.x));//heading in radians, 0 is 3 O'Clock
 		if(isNaN(heading)){//we are going vertically, i.e. p1.x == p.x

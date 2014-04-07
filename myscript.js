@@ -58,21 +58,25 @@ var sonarType = new Array();
 	sonarType.push("ss");
 	
 var dragPoint = d3.behavior.drag()
-	.on("drag", function(d,i) {
+	.on("drag", function(d,i) {	
 	//only drag if it is allowed at the time
 	if(draggable){
+		console.log(this);
 		var path = this.classList[0].slice(-1); //Path number we are working with
 		d.x = Math.max(0, Math.min(w, d3.event.x));
 		d.y = Math.max(0, Math.min(h, d3.event.y));
 		//set point location
-		d3.select(this).attr("transform", "translate(" + [ d.x,d.y ] + ")");
+		d3.select(this).attr("cx", d.x).attr("cy",d.y);
+		//Update vehicle location if starting point moves
+		if(this.classList[1].slice(-1) === "0"){
+			d3.selectAll(".UUV"+path).attr("cx", d.x).attr("cy",d.y);
+		}
 		//Now working with rest of line data, need to invert to SVG coordinate system for continuity
 		d.x = xscale.invert(d.x);
 		d.y = yscale.invert(d.y);
 		//Update path with new line data
 		d3.selectAll(".path"+path).attr("d", lineFunction(lineData[path]));
-		//Update vehicle location if starting point moves
-		d3.selectAll(".UUV"+path).attr("transform","translate("+[xscale(lineData[path][0].x), yscale(lineData[path][0].y)] + ")");
+
 		d3.select(".center"+path).remove();
 		drawBox(path);
 	}
@@ -83,7 +87,7 @@ svgContainer.selectAll(".path").data(lineData).enter().append("g")
 						.attr("class", function(d,i){return "group"+i})
 						.each(function(d,i){
 							d3.select(this).append("path")
-							.attr("class", "path"+i)
+							.attr("class", "paths path"+i)
 							.attr("d", lineFunction(d))
 							.style("stroke-dasharray", ("3,3"))//dashed line
 							.attr("stroke", colors[i])
@@ -94,14 +98,16 @@ svgContainer.selectAll(".path").data(lineData).enter().append("g")
 								.attr("class","UUV"+i+" vehicle")
 								.attr("fill", colors[i])
 								.attr("r", 5)
-								.attr("transform","translate("+[xscale(d[0].x), yscale(d[0].y)] + ")");
+								.attr("cx",xscale(d[0].x))
+								.attr("cy",yscale(d[0].y));
 							d3.select(this).selectAll(".point").data(d).enter()
 									.append("circle")
 									.attr("class", function(d,n){return "line"+i + " point"+n})
 									.attr("r", 3)
 									.attr("fill",colors[i])
 									.attr("stroke","black")
-									.attr("transform", function(d) { return "translate(" + [xscale(d.x), yscale(d.y)] + ")"; })
+									.attr("cx", function(d) { return xscale(d.x);})
+									.attr("cy", function(d) { return yscale(d.y);})
 									.call(dragPoint);
 						});
 
@@ -110,9 +116,9 @@ function drawBox(i){
 	var bbox = node.getBBox(); 
 	var xRotate = Math.floor(bbox.x + bbox.width/2.0);
 	var yRotate = Math.floor(bbox.y + bbox.height/2.0);
-	var path = node.classList[0];
+	var path = node.classList[1].slice(-1);
 	d3.select(".group"+i).append("rect")
-			.attr("class", path + " center"+path.slice(-1))
+			.attr("class", "center"+path)
 			.attr("x",xRotate-4)
 			.attr("y",yRotate-4)
 			.attr("width",8)
@@ -120,17 +126,25 @@ function drawBox(i){
 			.attr("fill", d3.select(node).attr("stroke"))
 			.attr("stroke","black")
 			.on("mousedown", function(){
-              d3.select(this)
-                  .attr("transform", function(){					
-					var x = parseFloat(d3.select(this).attr("x")) + 4;
-					var y = parseFloat(d3.select(this).attr("y")) + 4;
-					rotation+=15;
-					
-					return "rotate("+ rotation +","+x+","+y+")";
-					})
+					if(draggable){
+						console.log(d3.event);
+						var x = parseFloat(d3.select(this).attr("x")) + 4;
+						var y = parseFloat(d3.select(this).attr("y")) + 4;
+						rotation+=15;
+						rotatePath(this.classList[0].slice(-1),x,y);
+						//rotate works but need to change the +4 to fit with the current rotation, it's not always +4 it can be -4 if the rotation is all the way around.
+					}
             });
 };
 
+function rotatePath(i,x,y){
+console.log(i,x,y);
+d3.selectAll(".group"+i)
+				.attr("transform", function(){
+					return "rotate("+ rotation +","+x+","+y+")";
+					});//Breaks dragging since actual data e.g. cx, cy, does not update
+//console.log(lineData[i]);
+};
 
 var rotation = 0;
 function clearAll(){
@@ -146,14 +160,25 @@ function transition() {
 	d3.selectAll(".slider").style("pointer-events","none");
 	clearAll();
 	draggable = false; //Don't allow path dragging during transition
+	console.log(d3.selectAll(".paths"));
 	d3.selectAll(".vehicle")
-		.data(path)
+		.data(function(){
+				var all = d3.selectAll(".paths"); 
+				var path = new Array();
+				for(var k = 0; k < all.length;k++){
+					console.log(all[k]);
+					path.push(all[k]);
+				}
+				console.log(path);
+				return path;
+				})
 		.transition()
 		.duration(10000)
 		.ease("linear")
-		.attrTween("transform", function(d){ // Returns an attrTween for translating along the specified path element.
-										var path = d.node();
-										//console.log(path.classList);
+		.attrTween("transform", function(d,n){ // Returns an attrTween for translating along the specified path element.
+										console.log(d);
+										var path = d[n];
+										console.log(path.classList);
 										var classList = path.classList;
 										var l = path.getTotalLength();
 										return function(t) {												
@@ -163,19 +188,19 @@ function transition() {
 											}else{
 												p1 = path.getPointAtLength((t-.0001) * l);
 											}
-											if(classList[1]==="fw"){
+											if(sonarType[n]==="fw"){
 												drawForwardSonar(p,p1,classList[2]);
-											}else if(classList[1]==="ss"){
+											}else if(sonarType[n]==="ss"){
 												drawSideScanSonar(p,p1,classList[2]);
 											}else{
-												
+												console.log("n = "+n);
 											}
 											return "translate(" + p.x + "," + p.y + ")";
 										}
 									})
-		.each("end",function(d,i){if(i===(path.length-1)){finish()}});
-		
-}
+		.each("end",function(d,i){console.log("in each i = "+i);if(i===(1)){console.log("finish");finish()}});
+	console.log("out of transition");
+};
 
 function finish(){
 		var colorScale = d3.scale.quantize()

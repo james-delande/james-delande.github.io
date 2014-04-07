@@ -43,7 +43,7 @@ var lineData = new Array();
                  { "x": 0,  "y": 700}, { "x": 200,  "y": 700}]);
 	lineData.push([{ "x": 100,   "y": 1000},  { "x": 300,  "y": 1000},
                  { "x": 100,  "y": 1200}, { "x": 300,  "y": 1200}]);		 
-// console.log(lineData);
+
 //Create the path line
 var lineFunction = d3.svg.line()
                          .x(function(d) { return xscale(d.x); })
@@ -65,7 +65,7 @@ var dragPoint = d3.behavior.drag()
 		d.x = Math.max(0, Math.min(w, d3.event.x));
 		d.y = Math.max(0, Math.min(h, d3.event.y));
 		//set point location
-		d3.select(this).attr("transform", "translate(" + [ d.x,d.y ] + ")")
+		d3.select(this).attr("transform", "translate(" + [ d.x,d.y ] + ")");
 		//Now working with rest of line data, need to invert to SVG coordinate system for continuity
 		d.x = xscale.invert(d.x);
 		d.y = yscale.invert(d.y);
@@ -73,58 +73,64 @@ var dragPoint = d3.behavior.drag()
 		d3.selectAll(".path"+path).attr("d", lineFunction(lineData[path]));
 		//Update vehicle location if starting point moves
 		d3.selectAll(".UUV"+path).attr("transform","translate("+[xscale(lineData[path][0].x), yscale(lineData[path][0].y)] + ")");
+		d3.select(".center"+path).remove();
+		drawBox(path);
 	}
 });	
-//The line SVG Path we draw
-var path = new Array();
-var circle = new Array();
-for(i=0;i<lineData.length;i++){
-	path.push(svgContainer.append("path")
-				.attr("class", "path"+i+" "+ sonarType[i]+" "+colors[i])
-				.attr("d", lineFunction(lineData[i]))
-				.style("stroke-dasharray", ("3,3"))//dashed line
-				.attr("stroke", colors[i])
-				.attr("stroke-width", 2)
-				.attr("fill", "none"));
-	//Circle object, might be replacing with triangle	
-	circle.push(svgContainer.append("circle")
-					.attr("class","UUV"+i+" vehicle")
-					.attr("fill", colors[i])
-					.attr("r", 5)
-					.attr("transform","translate("+[xscale(lineData[i][0].x), yscale(lineData[i][0].y)] + ")"));
-	//Puts circles at the points in the path	
-	svgContainer.selectAll(".point")
-		.data(lineData[i])
-	  .enter().append("circle")
-		.attr("class", function(d,n){return "path"+i + " point"+n})
-		.attr("r", 3)
-		.attr("fill",colors[i])
-		.attr("stroke","black")
-		.attr("transform", function(d) { return "translate(" + [xscale(d.x), yscale(d.y)] + ")"; })
-		.call(dragPoint);
-		
-	var bbox = path[i].node().getBBox(); 
-	var xRotate = Math.floor(bbox.x + bbox.width/2.0)
-	var yRotate = Math.floor(bbox.y + bbox.height/2.0)
-	svgContainer.append("rect")
-			.attr("class", "path"+i + " center"+i)
+
+
+svgContainer.selectAll(".path").data(lineData).enter().append("g")
+						.attr("class", function(d,i){return "group"+i})
+						.each(function(d,i){
+							d3.select(this).append("path")
+							.attr("class", "path"+i)
+							.attr("d", lineFunction(d))
+							.style("stroke-dasharray", ("3,3"))//dashed line
+							.attr("stroke", colors[i])
+							.attr("stroke-width", 2)
+							.attr("fill", "none");
+							drawBox(i);
+							d3.select(this).append("circle")
+								.attr("class","UUV"+i+" vehicle")
+								.attr("fill", colors[i])
+								.attr("r", 5)
+								.attr("transform","translate("+[xscale(d[0].x), yscale(d[0].y)] + ")");
+							d3.select(this).selectAll(".point").data(d).enter()
+									.append("circle")
+									.attr("class", function(d,n){return "line"+i + " point"+n})
+									.attr("r", 3)
+									.attr("fill",colors[i])
+									.attr("stroke","black")
+									.attr("transform", function(d) { return "translate(" + [xscale(d.x), yscale(d.y)] + ")"; })
+									.call(dragPoint);
+						});
+
+function drawBox(i){	
+	var node = d3.select(".path"+i).node();
+	var bbox = node.getBBox(); 
+	var xRotate = Math.floor(bbox.x + bbox.width/2.0);
+	var yRotate = Math.floor(bbox.y + bbox.height/2.0);
+	var path = node.classList[0];
+	d3.select(".group"+i).append("rect")
+			.attr("class", path + " center"+path.slice(-1))
 			.attr("x",xRotate-4)
 			.attr("y",yRotate-4)
 			.attr("width",8)
 			.attr("height",8)
-			.attr("fill", colors[i])
+			.attr("fill", d3.select(node).attr("stroke"))
 			.attr("stroke","black")
 			.on("mousedown", function(){
               d3.select(this)
-                  .attr("transform", function(){
+                  .attr("transform", function(){					
 					var x = parseFloat(d3.select(this).attr("x")) + 4;
 					var y = parseFloat(d3.select(this).attr("y")) + 4;
 					rotation+=15;
+					
 					return "rotate("+ rotation +","+x+","+y+")";
 					})
             });
+};
 
-}
 
 var rotation = 0;
 function clearAll(){

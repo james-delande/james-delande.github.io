@@ -111,7 +111,7 @@ svgContainer.selectAll(".path").data(lineData).enter().append("g")
 									.call(dragPoint);
 						});
 
-function drawBox(i){	
+function drawBox(i){
 	var node = d3.select(".path"+i).node();
 	var bbox = node.getBBox(); 
 	var xRotate = Math.floor(bbox.x + bbox.width/2.0);
@@ -140,7 +140,13 @@ function drawBox(i){
 function rotatePath(i,x,y){
 d3.selectAll(".group"+i)
 				.attr("transform", function(){
-					return "rotate("+ rotation +","+x+","+y+")";
+					var trans = "rotate("+ rotation +","+x+","+y+")";
+					var oldPath = d3.select(".path"+i);
+					console.log(oldPath.attr("d"));
+					var path = Raphael.transformPath(oldPath.attr("d"),trans);
+					d3.selectAll(".path"+i).attr("d",path.toString());
+					console.log(path.toString());
+					return trans;
 					});//Breaks dragging since actual data e.g. cx, cy, does not update
 //console.log(lineData[i]);
 };
@@ -324,7 +330,7 @@ function drawInTime(start, end){
 			.attr("transform", function(d,n){ 
 											var path = d;
 											var classList = path.classList;
-											//console.log(path.classList);
+											console.log(path);
 											var l = path.getTotalLength();
 											var p,p1;
 											//console.log(timeScale(start),timeScale(end));

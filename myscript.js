@@ -96,7 +96,7 @@ var rotatePath = d3.behavior.drag()
 		var dy = Math.max(0, Math.min(h, d3.event.y));
 		var theta = Math.atan((recty-dy)/(rectx-dx));
 		var dtheta = Math.atan((recty-y)/(rectx-x))-theta;
-		console.log(theta*180/Math.PI);
+		//console.log(theta*180/Math.PI);
 		if(dx > rectx){
 			dx = (Math.cos(theta)*30) + rectx;
 			dy = (Math.sin(theta)*30) + recty;		
@@ -107,16 +107,57 @@ var rotatePath = d3.behavior.drag()
 
 		d3.select(this).attr("cx",dx).attr("cy",dy);
 		d3.selectAll(".handle"+num).attr("d","M"+[(rectx+4),(recty+4)]+"L"+[dx,dy]);
+		// d3.selectAll(".line"+num)
+			// .each(function (d,i){
+				// if(i===0){
+					// d.x = parseFloat(d3.select(this).attr("cx"));
+					// d.y = parseFloat(d3.select(this).attr("cy"));
+					// // console.log(d.x, d.y);
+					// // console.log(rectx,recty);
+					// var ptheta = Math.atan((recty-d.y)/(rectx-d.x));
+					// var dist = Math.sqrt(Math.pow(rectx-d.x,2)+Math.pow(recty-d.y,2));				
+					// console.log(ptheta*180/Math.PI);
+					// console.log(dtheta*180/Math.PI);
+					// console.log(theta*180/Math.PI);
+					// if(dx > rectx){
+						// ptheta = ptheta - (dtheta - theta);
+					// }else{
+						// ptheta = ptheta + (dtheta - theta);
+					// }								
 
+					// console.log(ptheta*180/Math.PI);
+					// if(d.x > rectx){
+						// d.x = (Math.cos(ptheta)*dist) + rectx;
+						// d.y = recty-(Math.sin(ptheta)*dist);						
+					// }else{
+						// d.x = rectx-(Math.cos(ptheta)*dist);
+						// if(d.y < recty){
+							// d.y = recty-(Math.sin(ptheta)*dist);
+						// }else{							
+							// d.y = recty-(Math.sin(ptheta)*dist);
+						// }
+						
+						
+					// }
+					// // if(dy > recty){
+						// // d.y = recty-(Math.sin(ptheta)*dist);
+					// // }else{
+						// // d.y = (Math.sin(ptheta)*dist) + recty;
+					// // }
+					// //console.log(dist);
+					// //console.log(d.x, d.y);
+					// d3.select(this).attr({
+						// cx: d.x,
+						// cy: d.y
+					// });
+					// if(++first>10){
+						// //draggable = false;
+					// }
+				// }
+			// });
 	}
 });
-function rotatePoint(rectx, recty, dx, dy, dist){
-	    //Find angle to mouse in degrees
 
-
-
-	return [dx,dy];
-}
 svgContainer.selectAll(".path").data(lineData).enter().append("g")
 						.attr("class", function(d,i){return "group"+i})
 						.each(function(d,i){
@@ -158,7 +199,7 @@ function drawBox(i){
 				.style("stroke-dasharray", ("2,1"));
 				
 	d3.select(".group"+i).append("circle")
-				.attr("class", "rotate"+i)
+				.attr("class", "handle"+i +" rotate"+i)
 				.attr("cx",xRotate)
 				.attr("cy",yRotate-30)
 				.attr("r",5)

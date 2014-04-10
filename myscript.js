@@ -78,11 +78,45 @@ var dragPoint = d3.behavior.drag()
 		d3.selectAll(".path"+path).attr("d", lineFunction(lineData[path]));
 
 		d3.select(".center"+path).remove();
+		d3.selectAll(".handle"+path).remove();
 		drawBox(path);
 	}
 });	
 
+var rotatePath = d3.behavior.drag()
+	.on("drag", function(d,i) {
+	//only drag if it is allowed at the time
+	if(draggable){	
+		var num = this.classList[0].slice(-1); //group number we are working with
+		var x = parseFloat(d3.select(this).attr("cx"));
+		var y = parseFloat(d3.select(this).attr("cy"));		
+		var rect = d3.select(".center"+num);
+		var rectx = parseFloat(rect.attr("x")), recty = parseFloat(rect.attr("y"));
+		var dx = Math.max(0, Math.min(w, d3.event.x));
+		var dy = Math.max(0, Math.min(h, d3.event.y));
+		var theta = Math.atan((recty-dy)/(rectx-dx));
+		var dtheta = Math.atan((recty-y)/(rectx-x))-theta;
+		console.log(theta*180/Math.PI);
+		if(dx > rectx){
+			dx = (Math.cos(theta)*30) + rectx;
+			dy = (Math.sin(theta)*30) + recty;		
+		}else{
+			dx = rectx-(Math.cos(theta)*30);
+			dy = recty-(Math.sin(theta)*30);
+		}
 
+		d3.select(this).attr("cx",dx).attr("cy",dy);
+		d3.selectAll(".handle"+num).attr("d","M"+[(rectx+4),(recty+4)]+"L"+[dx,dy]);
+
+	}
+});
+function rotatePoint(rectx, recty, dx, dy, dist){
+	    //Find angle to mouse in degrees
+
+
+
+	return [dx,dy];
+}
 svgContainer.selectAll(".path").data(lineData).enter().append("g")
 						.attr("class", function(d,i){return "group"+i})
 						.each(function(d,i){
@@ -110,13 +144,28 @@ svgContainer.selectAll(".path").data(lineData).enter().append("g")
 									.attr("cy", function(d) { return yscale(d.y);})
 									.call(dragPoint);
 						});
-
+	
 function drawBox(i){
 	var node = d3.select(".path"+i).node();
 	var bbox = node.getBBox(); 
 	var xRotate = Math.floor(bbox.x + bbox.width/2.0);
 	var yRotate = Math.floor(bbox.y + bbox.height/2.0);
 	var path = node.classList[1].slice(-1);
+	d3.select(".group"+i).append("path")
+				.attr("class", "handle"+i)
+				.attr("d","M"+[(xRotate),(yRotate)]+"V"+(yRotate-30))
+				.attr("stroke","gray")
+				.style("stroke-dasharray", ("2,1"));
+				
+	d3.select(".group"+i).append("circle")
+				.attr("class", "rotate"+i)
+				.attr("cx",xRotate)
+				.attr("cy",yRotate-30)
+				.attr("r",5)
+				.attr("stroke","black")
+				.attr("fill", "gray")
+				.call(rotatePath);
+				
 	d3.select(".group"+i).append("rect")
 			.attr("class", "center"+path)
 			.attr("x",xRotate-4)
@@ -124,34 +173,10 @@ function drawBox(i){
 			.attr("width",8)
 			.attr("height",8)
 			.attr("fill", d3.select(node).attr("stroke"))
-			.attr("stroke","black")
-			.on("mousedown", function(){
-					if(draggable){
-						//console.log(d3.event);
-						var x = parseFloat(d3.select(this).attr("x")) + 4;
-						var y = parseFloat(d3.select(this).attr("y")) + 4;
-						rotation+=15;
-						rotatePath(this.classList[0].slice(-1),x,y);
-						//rotate works but need to change the +4 to fit with the current rotation, it's not always +4 it can be -4 if the rotation is all the way around.
-					}
-            });
+			.attr("stroke","black");
+
 };
 
-function rotatePath(i,x,y){
-d3.selectAll(".group"+i)
-				.attr("transform", function(){
-					var trans = "rotate("+ rotation +","+x+","+y+")";
-					var oldPath = d3.select(".path"+i);
-					console.log(oldPath.attr("d"));
-					var path = Raphael.transformPath(oldPath.attr("d"),trans);
-					d3.selectAll(".path"+i).attr("d",path.toString());
-					console.log(path.toString());
-					return trans;
-					});//Breaks dragging since actual data e.g. cx, cy, does not update
-//console.log(lineData[i]);
-};
-
-var rotation = 0;
 function clearAll(){
 	heatmap.clearRect(0,0,canvas.width,canvas.height);
 	heatmap2.clearRect(0,0,canvas2.width,canvas2.height);

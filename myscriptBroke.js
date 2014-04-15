@@ -78,35 +78,103 @@ var dragPoint = d3.behavior.drag()
 		d3.selectAll(".path"+path).attr("d", lineFunction(lineData[path]));
 
 		d3.select(".center"+path).remove();
+		d3.selectAll(".handle"+path).remove();
 		drawBox(path);
 	}
 });	
-singleSlider(15);
-svgContainer.selectAll(".path").data(lineData).enter().append("path")
-						.attr("class", function(d,i){return "paths path"+i})
-						.attr("d", function(d){return lineFunction(d)})
-						.style("stroke-dasharray", ("3,3"))//dashed line
-						.attr("stroke", function(d,i){return colors[i]})
-						.attr("stroke-width", 2)
-						.attr("fill", "none");
-												
-svgContainer.selectAll(".vehicle").data(d3.selectAll(".paths")[0]).enter().append("circle")
-						.each(function (d,i){
-							var l = d.getTotalLength();
-							var time = xSliderScale.invert(d3.select(".handle").attr("cx"))/100;
-							var p = d.getPointAtLength(time * l);
-							d3.select(this).attr({
-								class: "UUV"+i+" vehicle",
-								fill: colors[i],
-								r: 5,
-								cx: p.x,
-								cy: p.y
-							})
-						});						
-svgContainer.selectAll(".group").data(lineData).enter().append("g")
+
+var rotatePath = d3.behavior.drag()
+	.on("drag", function(d,i) {
+	//only drag if it is allowed at the time
+	if(draggable){	
+		var num = this.classList[0].slice(-1); //group number we are working with
+		var x = parseFloat(d3.select(this).attr("cx"));
+		var y = parseFloat(d3.select(this).attr("cy"));		
+		var rect = d3.select(".center"+num);
+		var rectx = parseFloat(rect.attr("x")), recty = parseFloat(rect.attr("y"));
+		var dx = Math.max(0, Math.min(w, d3.event.x));
+		var dy = Math.max(0, Math.min(h, d3.event.y));
+		var theta = Math.atan((recty-dy)/(rectx-dx));
+		var dtheta = Math.atan((recty-y)/(rectx-x))-theta;
+		//console.log(theta*180/Math.PI);
+		if(dx > rectx){
+			dx = (Math.cos(theta)*30) + rectx;
+			dy = (Math.sin(theta)*30) + recty;		
+		}else{
+			dx = rectx-(Math.cos(theta)*30);
+			dy = recty-(Math.sin(theta)*30);
+		}
+
+		d3.select(this).attr("cx",dx).attr("cy",dy);
+		d3.selectAll(".handle"+num).attr("d","M"+[(rectx+4),(recty+4)]+"L"+[dx,dy]);
+		// d3.selectAll(".line"+num)
+			// .each(function (d,i){
+				// if(i===0){
+					// d.x = parseFloat(d3.select(this).attr("cx"));
+					// d.y = parseFloat(d3.select(this).attr("cy"));
+					// // console.log(d.x, d.y);
+					// // console.log(rectx,recty);
+					// var ptheta = Math.atan((recty-d.y)/(rectx-d.x));
+					// var dist = Math.sqrt(Math.pow(rectx-d.x,2)+Math.pow(recty-d.y,2));				
+					// console.log(ptheta*180/Math.PI);
+					// console.log(dtheta*180/Math.PI);
+					// console.log(theta*180/Math.PI);
+					// if(dx > rectx){
+						// ptheta = ptheta - (dtheta - theta);
+					// }else{
+						// ptheta = ptheta + (dtheta - theta);
+					// }								
+
+					// console.log(ptheta*180/Math.PI);
+					// if(d.x > rectx){
+						// d.x = (Math.cos(ptheta)*dist) + rectx;
+						// d.y = recty-(Math.sin(ptheta)*dist);						
+					// }else{
+						// d.x = rectx-(Math.cos(ptheta)*dist);
+						// if(d.y < recty){
+							// d.y = recty-(Math.sin(ptheta)*dist);
+						// }else{							
+							// d.y = recty-(Math.sin(ptheta)*dist);
+						// }
+						
+						
+					// }
+					// // if(dy > recty){
+						// // d.y = recty-(Math.sin(ptheta)*dist);
+					// // }else{
+						// // d.y = (Math.sin(ptheta)*dist) + recty;
+					// // }
+					// //console.log(dist);
+					// //console.log(d.x, d.y);
+					// d3.select(this).attr({
+						// cx: d.x,
+						// cy: d.y
+					// });
+					// if(++first>10){
+						// //draggable = false;
+					// }
+				// }
+			// });
+	}
+});
+
+svgContainer.selectAll(".path").data(lineData).enter().append("g")
 						.attr("class", function(d,i){return "group"+i})
 						.each(function(d,i){
+							d3.select(this).append("path")
+							.attr("class", "paths path"+i)
+							.attr("d", lineFunction(d))
+							.style("stroke-dasharray", ("3,3"))//dashed line
+							.attr("stroke", colors[i])
+							.attr("stroke-width", 2)
+							.attr("fill", "none");
 							drawBox(i);
+							d3.select(this).append("circle")
+								.attr("class","UUV"+i+" vehicle")
+								.attr("fill", colors[i])
+								.attr("r", 5)
+								.attr("cx",xscale(d[0].x))
+								.attr("cy",yscale(d[0].y));
 							d3.select(this).selectAll(".point").data(d).enter()
 									.append("circle")
 									.attr("class", function(d,n){return "line"+i + " point"+n})
@@ -117,13 +185,28 @@ svgContainer.selectAll(".group").data(lineData).enter().append("g")
 									.attr("cy", function(d) { return yscale(d.y);})
 									.call(dragPoint);
 						});
-
+	
 function drawBox(i){
 	var node = d3.select(".path"+i).node();
 	var bbox = node.getBBox(); 
 	var xRotate = Math.floor(bbox.x + bbox.width/2.0);
 	var yRotate = Math.floor(bbox.y + bbox.height/2.0);
 	var path = node.classList[1].slice(-1);
+	d3.select(".group"+i).append("path")
+				.attr("class", "handle"+i)
+				.attr("d","M"+[(xRotate),(yRotate)]+"V"+(yRotate-30))
+				.attr("stroke","gray")
+				.style("stroke-dasharray", ("2,1"));
+				
+	d3.select(".group"+i).append("circle")
+				.attr("class", "handle"+i +" rotate"+i)
+				.attr("cx",xRotate)
+				.attr("cy",yRotate-30)
+				.attr("r",5)
+				.attr("stroke","black")
+				.attr("fill", "gray")
+				.call(rotatePath);
+				
 	d3.select(".group"+i).append("rect")
 			.attr("class", "center"+path)
 			.attr("x",xRotate-4)
@@ -131,45 +214,10 @@ function drawBox(i){
 			.attr("width",8)
 			.attr("height",8)
 			.attr("fill", d3.select(node).attr("stroke"))
-			.attr("stroke","black")
-			.on("mousedown", function(){
-					if(draggable){
-						//console.log(d3.event);
-						clearAll();
-						var x = parseFloat(d3.select(this).attr("x")) + 4;
-						var y = parseFloat(d3.select(this).attr("y")) + 4;
-						rotation+=15;
-						rotatePath(this.classList[0].slice(-1),x,y);
-						//rotate works but need to change the +4 to fit with the current rotation, it's not always +4 it can be -4 if the rotation is all the way around.
-					}
-            });
-};
-function getRotatedPath(num){
-		var path = Raphael.transformPath(d3.select(".path"+num).attr("d"),"R15"); //get the transformed path
-		d3.selectAll(".path"+num).attr("d",path.toString());//Rotate the path
-		var d = d3.selectAll(".path"+num)[0][0];
-		var l = d.getTotalLength();
-		var time = xSliderScale.invert(d3.select(".handle").attr("cx"))/100;
-		var p = d.getPointAtLength(time * l);
-		d3.selectAll(".UUV"+num).attr({
-								cx: p.x,
-								cy: p.y
-							});
-	};
+			.attr("stroke","black");
 
-function rotatePath(i,x,y){
-d3.selectAll(".group"+i)
-				.attr("transform", function(){
-					//console.log(this);
-					var trans = "rotate("+ rotation +","+x+","+y+")";
-					
-					return trans;
-					});//Breaks dragging since actual data e.g. cx, cy, does not update
-	getRotatedPath(i);
-	//console.log(d3.selectAll(".group"+i).attr("transform"));
 };
 
-var rotation = 0;
 function clearAll(){
 	heatmap.clearRect(0,0,canvas.width,canvas.height);
 	heatmap2.clearRect(0,0,canvas2.width,canvas2.height);
@@ -183,14 +231,21 @@ function transition() {
 	d3.selectAll(".slider").style("pointer-events","none");
 	clearAll();
 	draggable = false; //Don't allow path dragging during transition
-
 	d3.selectAll(".vehicle")
-		.data(function(){return d3.selectAll(".paths")[0];	})
+		.data(function(){
+				var all = d3.selectAll(".paths")[0]; 
+				var path = new Array();
+				for(var k = 0; k < all.length;k++){
+					path.push(all[k]);
+				}
+				return path;
+				})
 		.transition()
 		.duration(10000)
 		.ease("linear")
 		.attrTween("transform", function(d,n){ // Returns an attrTween for translating along the specified path element.
 										var path = d;
+										var classList = path.classList;
 										var l = path.getTotalLength();
 										return function(t) {									
 											var p = path.getPointAtLength(t * l),p1;
@@ -200,23 +255,15 @@ function transition() {
 												p1 = path.getPointAtLength((t-.0001) * l);
 											}
 											if(sonarType[n]==="fw"){
-												drawForwardSonar(p,p1,n);
+												drawForwardSonar(p,p1,classList[2]);
 											}else if(sonarType[n]==="ss"){
-												drawSideScanSonar(p,p1,n);
+												drawSideScanSonar(p,p1,classList[2]);
 											}else{
 												console.log("n = "+n);
 											}
-											return "translate("+[(p.x-d.getPointAtLength(0).x), (p.y - d.getPointAtLength(0).y)] + ")";
+											return "translate("+[(p.x-xscale(lineData[n][0].x)), (p.y - yscale(lineData[n][0].y))] + ")";
 										}
 									})
-		.each("start",function(d,i){
-					console.log(d);
-					var p = d.getPointAtLength(0);
-					d3.selectAll(".UUV"+i).attr({
-											cx: p.x,
-											cy: p.y
-										});
-		})
 		.each("end",function(d,i){if(i===(sonarType.length-1)){finish()}});
 };
 
@@ -342,58 +389,44 @@ function drawInTime(start, end){
 				for(var k = 0; k < all.length;k++){
 					path.push(all[k]);
 				}
-				//console.log(path);
 				return path;
 				})
-			.each(function(d,n){ 
-									var path = d;//getRotatedPath(n);
-									//var otherPath = getRotatedPath(n);
-									var classList = path.classList;
-									//console.log(otherPath);
-									//console.log(path);
-									var l = path.getTotalLength();
-									// var l = Raphael.getTotalLength(otherPath);
-									//console.log(l);
-									//console.log(path.getTotalLength());
-									var p,p1;
-									//console.log(timeScale(start),timeScale(end));
-									for(time=timeScale(start);time<=timeScale(end);time+=.01){
-										p = path.getPointAtLength(time * l);
-										// p = Raphael.getPointAtLength(otherPath, time*l);
-										//console.log(p.alpha);
-										if(time-.0001 < 0){
-											p1 = path.getPointAtLength(0);
-											// p1 = Raphael.getPointAtLength(otherPath, 0);
-										}else{
-											p1 = path.getPointAtLength((time-.0001) * l);
-											// p1 = Raphael.getPointAtLength(otherPath,(time-.001)*l);
-										}
-										if(sonarType[n]==="fw"){
-											drawForwardSonar(p,p1,classList[2]);
-										}else if(sonarType[n]==="ss"){
-											drawSideScanSonar(p,p1,classList[2]);
-										}else{
-											console.log("fail");
-										}
-										count++;
-									}									
-									p = path.getPointAtLength(timeScale(end)*l);
-									// p = Raphael.getPointAtLength(otherPath, timeScale(end)*l);
-								d3.select(this).attr({
-									cx: p.x,
-									cy: p.y									
-								});
-				});
-			//.each("end",function(d,i){if(i===(sonarType.length-1)){instant(count/2)}});			
+			.transition()
+			.duration(0)
+			.attr("transform", function(d,n){ 
+											var path = d;
+											var classList = path.classList;
+											console.log(path);
+											var l = path.getTotalLength();
+											var p,p1;
+											//console.log(timeScale(start),timeScale(end));
+											for(time=timeScale(start);time<=timeScale(end);time+=.01){
+												p = path.getPointAtLength(time * l);
+												if(time-.0001 < 0){
+													p1 = path.getPointAtLength(0);
+												}else{
+													p1 = path.getPointAtLength((time-.0001) * l);
+												}
+												if(sonarType[n]==="fw"){
+													drawForwardSonar(p,p1,classList[2]);
+												}else if(sonarType[n]==="ss"){
+													drawSideScanSonar(p,p1,classList[2]);
+												}else{
+													console.log("fail");
+												}
+												count++;
+											}
+											
+											p = path.getPointAtLength(timeScale(end)*l);
+											return "translate("+[(p.x-xscale(lineData[n][0].x)), (p.y - yscale(lineData[n][0].y))] + ")";							
+										})
+			.each("end",function(d,i){if(i===(sonarType.length-1)){instant(count/2)}});			
 };	
-
+singleSlider(15);
 
 function drawForwardSonar(p,p1,color){		
 		heatmap.clearRect(0,0,canvas.width,canvas.height);
 		var heading = Math.atan2((p.y-p1.y),(p.x-p1.x));//heading in radians, 0 is 3 O'Clock
-		// console.log(Math.atan2((p.y-p1.y),(p.x-p1.x)));
-		// var heading = parseFloat(p.alpha);
-		// console.log(parseFloat(Raphael.rad(p.alpha)));
 		if(isNaN(heading)){//we are going vertically, i.e. p1.x == p.x
 			if(p.y>p1.y){
 				heading = Math.PI/2;
@@ -402,7 +435,6 @@ function drawForwardSonar(p,p1,color){
 			}
 			console.log(heading);
 		}
-		//console.log(heading);
 		var center = [p.x+sonarRange * Math.cos(heading), p.y+sonarRange * Math.sin(heading)];
 		heatmap.fillStyle =  "rgba(1,1,1,1)";
 		//heatmap.globalAlpha=.5;
@@ -430,7 +462,6 @@ function drawSideScanSonar(p,p1,color){
 			}
 			console.log(heading);
 		}
-		//console.log(heading);
 		var perp = [heading+Math.PI/2, heading-Math.PI/2];
 		var center = [p.x+sonarRange * Math.cos(perp[0]), p.y+sonarRange * Math.sin(perp[0]),
 					p.x+sonarRange * Math.cos(perp[1]), p.y+sonarRange * Math.sin(perp[1])];

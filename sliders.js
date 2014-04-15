@@ -3,14 +3,14 @@
 var width = 500,
     height = 100;
 	
-var x = d3.scale.linear()
+var xSliderScale = d3.scale.linear()
 	.domain([0, 100])
 	.range([25, 475])
 	.clamp(true);
 	
 function singleSlider(loc){	
 	var brush = d3.svg.brush()
-		.x(x)
+		.x(xSliderScale)
 		.extent([loc, loc])
 		.on("brush", brushed);
 
@@ -24,7 +24,7 @@ function singleSlider(loc){
 		.attr("class", "x axis slider")
 		.attr("transform", "translate(0," + height / 2 + ")")
 		.call(d3.svg.axis()
-		  .scale(x)
+		  .scale(xSliderScale)
 		  .orient("bottom")
 		  .tickFormat(function(d) { return d + "%"; })
 		  .tickSize(0)
@@ -48,16 +48,16 @@ function singleSlider(loc){
 		.attr("class", "handle")
 		.attr("transform", "translate(0," + height / 2 + ")")
 		.attr("r", 9)
-		.attr("cx",x(loc));
+		.attr("cx",xSliderScale(loc));
 		
 	function brushed() {
 		var value = brush.extent()[0];
 		//console.log(d3.event.sourceEvent);
 		if (d3.event.sourceEvent) { // not a programmatic event
-			value = x.invert(d3.mouse(this)[0]);
+			value = xSliderScale.invert(d3.mouse(this)[0]);
 			brush.extent([value, value]);
 		}
-		handle.attr("cx", x(value));
+		handle.attr("cx", xSliderScale(value));
 		drawInTime(value,value);
 	}	
 };
@@ -66,7 +66,7 @@ function singleSlider(loc){
 //Double slider
 function doubleSlider(loc){
 	var brush = d3.svg.brush()
-		.x(x)
+		.x(xSliderScale)
 		.extent([loc, loc+10])
 		.on("brushstart", brushstart)
 		.on("brush", brushmove)
@@ -88,7 +88,7 @@ function doubleSlider(loc){
 		.attr("transform", "translate(0," + (height-15) + ")")
 		.attr("y",height)
 		.call(d3.svg.axis()
-		  .scale(x)
+		  .scale(xSliderScale)
 		  .orient("bottom")
 		  .tickFormat(function(d) { return d + "%"; })
 		  .tickSize(-height +20)

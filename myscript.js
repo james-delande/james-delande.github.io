@@ -56,29 +56,36 @@ var colors = new Array();
 var sonarType = new Array();
 	sonarType.push("fw");
 	sonarType.push("ss");
-	
+function updateVehicle(num){
+		var path = d3.selectAll(".path"+num)[0][0];
+		var l = path.getTotalLength();
+		var time = xSliderScale.invert(d3.select(".handle").attr("cx"))/100;
+		var p = path.getPointAtLength(time * l);
+		d3.selectAll(".UUV"+num).attr({
+								cx: p.x,
+								cy: p.y
+							});
+};	
 var dragPoint = d3.behavior.drag()
 	.on("drag", function(d,i) {
 	//only drag if it is allowed at the time
 	if(draggable){
-		console.log(this);
-		var path = this.classList[0].slice(-1); //Path number we are working with
+		var num = this.classList[0].slice(-1); //Path number we are working with
 		d.x = Math.max(0, Math.min(w, d3.event.x));
 		d.y = Math.max(0, Math.min(h, d3.event.y));
 		//set point location
 		d3.select(this).attr("cx", d.x).attr("cy",d.y);
-		//Update vehicle location if starting point moves
-		if(this.classList[1].slice(-1) === "0"){
-			d3.selectAll(".UUV"+path).attr("cx", d.x).attr("cy",d.y);
-		}
+		//Update vehicle location 
+		updateVehicle(num);
 		//Now working with rest of line data, need to invert to SVG coordinate system for continuity
 		d.x = xscale.invert(d.x);
 		d.y = yscale.invert(d.y);
 		//Update path with new line data
-		d3.selectAll(".path"+path).attr("d", lineFunction(lineData[path]));
+		d3.selectAll(".path"+num).attr("d", lineFunction(lineData[num]));
 
-		d3.select(".center"+path).remove();
-		drawBox(path);
+		d3.select(".center"+num).remove();
+		d3.selectAll(".rotate"+num).remove();
+		drawBox(num);
 	}
 });	
 singleSlider(15);
@@ -102,8 +109,36 @@ svgContainer.selectAll(".vehicle").data(d3.selectAll(".paths")[0]).enter().appen
 								cx: p.x,
 								cy: p.y
 							})
-						});						
-svgContainer.selectAll(".group").data(lineData).enter().append("g")
+						});		
+var rotatePaths = d3.behavior.drag()
+	//.origin(function(d){return d;})
+	.on("drag", function(d) {
+	//only drag if it is allowed at the time
+	if(draggable){	
+		console.log(this);
+		var num = this.classList[0].slice(-1); //group number we are working with
+		var x = parseFloat(d3.select(this).attr("cx"));
+		var y = parseFloat(d3.select(this).attr("cy"));		
+		var rect = d3.select(".center"+num);
+		var rectx = parseFloat(rect.attr("x")), recty = parseFloat(rect.attr("y"));
+		var dx = Math.max(0, Math.min(w, d3.event.x));
+		var dy = Math.max(0, Math.min(h, d3.event.y));
+		var theta = Math.atan((recty-dy)/(rectx-dx));
+		var dtheta = Math.atan((recty-y)/(rectx-x))-theta;
+		console.log(theta*180/Math.PI);
+		if(dx > rectx){
+			dx = (Math.cos(theta)*30) + rectx;
+			dy = (Math.sin(theta)*30) + recty;		
+		}else{
+			dx = rectx-(Math.cos(theta)*30);
+			dy = recty-(Math.sin(theta)*30);
+		}
+
+		d3.select(this).attr("cx",dx).attr("cy",dy);
+		d3.selectAll(".hinge"+num).attr("d","M"+[(rectx+4),(recty+4)]+"L"+[dx,dy]);
+	}
+});						
+svgContainer.selectAll(".rotate").data(lineData).enter().append("g")
 						.attr("class", function(d,i){return "group"+i})
 						.each(function(d,i){
 							drawBox(i);
@@ -123,53 +158,37 @@ function drawBox(i){
 	var bbox = node.getBBox(); 
 	var xRotate = Math.floor(bbox.x + bbox.width/2.0);
 	var yRotate = Math.floor(bbox.y + bbox.height/2.0);
-	var path = node.classList[1].slice(-1);
+	
+	d3.select(".group"+i).append("path")
+				.attr("class", "hinge"+i +" rotate"+i)
+				.attr("d","M"+[(xRotate),(yRotate)]+"V"+(yRotate-30))
+				.attr("stroke","gray")
+				.style("stroke-dasharray", ("2,1"));
+				
+	d3.select(".group"+i).append("circle")
+				.attr("class", "handle"+i +" rotate"+i)
+				.attr("cx",xRotate)
+				.attr("cy",yRotate-30)
+				.attr("r",5)
+				.attr("stroke","black")
+				.attr("fill", "gray")
+				.call(rotatePaths);
+				
 	d3.select(".group"+i).append("rect")
-			.attr("class", "center"+path)
+			.attr("class", "center"+i)
 			.attr("x",xRotate-4)
 			.attr("y",yRotate-4)
 			.attr("width",8)
 			.attr("height",8)
 			.attr("fill", d3.select(node).attr("stroke"))
-			.attr("stroke","black")
-			.on("mousedown", function(){
-					if(draggable){
-						//console.log(d3.event);
-						clearAll();
-						var x = parseFloat(d3.select(this).attr("x")) + 4;
-						var y = parseFloat(d3.select(this).attr("y")) + 4;
-						rotation+=15;
-						rotatePath(this.classList[0].slice(-1),x,y);
-						//rotate works but need to change the +4 to fit with the current rotation, it's not always +4 it can be -4 if the rotation is all the way around.
-					}
-            });
+			.attr("stroke","black");
 };
 function getRotatedPath(num){
 		var path = Raphael.transformPath(d3.select(".path"+num).attr("d"),"R15"); //get the transformed path
 		d3.selectAll(".path"+num).attr("d",path.toString());//Rotate the path
-		var d = d3.selectAll(".path"+num)[0][0];
-		var l = d.getTotalLength();
-		var time = xSliderScale.invert(d3.select(".handle").attr("cx"))/100;
-		var p = d.getPointAtLength(time * l);
-		d3.selectAll(".UUV"+num).attr({
-								cx: p.x,
-								cy: p.y
-							});
+		updateVehicle(num);
 	};
 
-function rotatePath(i,x,y){
-d3.selectAll(".group"+i)
-				.attr("transform", function(){
-					//console.log(this);
-					var trans = "rotate("+ rotation +","+x+","+y+")";
-					
-					return trans;
-					});//Breaks dragging since actual data e.g. cx, cy, does not update
-	getRotatedPath(i);
-	//console.log(d3.selectAll(".group"+i).attr("transform"));
-};
-
-var rotation = 0;
 function clearAll(){
 	heatmap.clearRect(0,0,canvas.width,canvas.height);
 	heatmap2.clearRect(0,0,canvas2.width,canvas2.height);
@@ -177,7 +196,7 @@ function clearAll(){
 	image = heatmap3.createImageData(canvas3.width,canvas3.height);
 	d3.select(".legendSVG").remove();
 	last = 0;
-}
+};
 function transition() {
 	document.getElementById("transition").disabled = true;
 	d3.selectAll(".slider").style("pointer-events","none");
@@ -185,30 +204,29 @@ function transition() {
 	draggable = false; //Don't allow path dragging during transition
 
 	d3.selectAll(".vehicle")
-		.data(function(){return d3.selectAll(".paths")[0];	})
+		.data(d3.selectAll(".paths")[0])
 		.transition()
 		.duration(10000)
 		.ease("linear")
-		.attrTween("transform", function(d,n){ // Returns an attrTween for translating along the specified path element.
-										var path = d;
-										var l = path.getTotalLength();
-										return function(t) {									
-											var p = path.getPointAtLength(t * l),p1;
-											if(t-.0001 < 0){
-												p1 = path.getPointAtLength(0);
-											}else{
-												p1 = path.getPointAtLength((t-.0001) * l);
-											}
-											if(sonarType[n]==="fw"){
-												drawForwardSonar(p,p1,n);
-											}else if(sonarType[n]==="ss"){
-												drawSideScanSonar(p,p1,n);
-											}else{
-												console.log("n = "+n);
-											}
-											return "translate("+[(p.x-d.getPointAtLength(0).x), (p.y - d.getPointAtLength(0).y)] + ")";
-										}
-									})
+		.attrTween("transform", function(d,i){ // Returns an attrTween for translating along the specified path element.
+								var l = d.getTotalLength();
+								return function(t) {									
+									var p = d.getPointAtLength(t * l),p1;
+									if(t-.0001 < 0){
+										p1 = d.getPointAtLength(0);
+									}else{
+										p1 = d.getPointAtLength((t-.0001) * l);
+									}
+									if(sonarType[i]==="fw"){
+										drawForwardSonar(p,p1,i);
+									}else if(sonarType[i]==="ss"){
+										drawSideScanSonar(p,p1,i);
+									}else{
+										console.log("i = "+i);
+									}
+									return "translate("+[(p.x-d.getPointAtLength(0).x), (p.y - d.getPointAtLength(0).y)] + ")";
+								}
+							})
 		.each("start",function(d,i){
 					console.log(d);
 					var p = d.getPointAtLength(0);
@@ -336,55 +354,36 @@ function drawInTime(start, end){
 	var count = 0;
 	clearAll();
 	d3.selectAll(".vehicle")
-			.data(function(){
-				var all = d3.selectAll(".paths")[0]; 
-				var path = new Array();
-				for(var k = 0; k < all.length;k++){
-					path.push(all[k]);
-				}
-				//console.log(path);
-				return path;
-				})
-			.each(function(d,n){ 
-									var path = d;//getRotatedPath(n);
-									//var otherPath = getRotatedPath(n);
-									var classList = path.classList;
-									//console.log(otherPath);
-									//console.log(path);
-									var l = path.getTotalLength();
-									// var l = Raphael.getTotalLength(otherPath);
-									//console.log(l);
-									//console.log(path.getTotalLength());
-									var p,p1;
-									//console.log(timeScale(start),timeScale(end));
-									for(time=timeScale(start);time<=timeScale(end);time+=.01){
-										p = path.getPointAtLength(time * l);
-										// p = Raphael.getPointAtLength(otherPath, time*l);
-										//console.log(p.alpha);
-										if(time-.0001 < 0){
-											p1 = path.getPointAtLength(0);
-											// p1 = Raphael.getPointAtLength(otherPath, 0);
-										}else{
-											p1 = path.getPointAtLength((time-.0001) * l);
-											// p1 = Raphael.getPointAtLength(otherPath,(time-.001)*l);
-										}
-										if(sonarType[n]==="fw"){
-											drawForwardSonar(p,p1,classList[2]);
-										}else if(sonarType[n]==="ss"){
-											drawSideScanSonar(p,p1,classList[2]);
-										}else{
-											console.log("fail");
-										}
-										count++;
-									}									
-									p = path.getPointAtLength(timeScale(end)*l);
-									// p = Raphael.getPointAtLength(otherPath, timeScale(end)*l);
+			.data(d3.selectAll(".paths")[0])
+			.each(function(d,i){ 
+								var l = d.getTotalLength();
+								var p,p1;
+								//console.log(timeScale(start),timeScale(end));
+								for(time=timeScale(start);time<=timeScale(end);time+=.01){
+									p = d.getPointAtLength(time * l);
+									if(time-.0001 < 0){
+										p1 = d.getPointAtLength(0);
+									}else{
+										p1 = d.getPointAtLength((time-.0001) * l);
+									}
+									if(sonarType[i]==="fw"){
+										drawForwardSonar(p,p1,i);
+									}else if(sonarType[i]==="ss"){
+										drawSideScanSonar(p,p1,i);
+									}else{
+										console.log("fail");
+									}
+									count++;
+								}									
+								p = d.getPointAtLength(timeScale(end)*l);
 								d3.select(this).attr({
 									cx: p.x,
 									cy: p.y									
 								});
-				});
-			//.each("end",function(d,i){if(i===(sonarType.length-1)){instant(count/2)}});			
+								if(i===(sonarType.length-1)){
+									instant(count/2)
+								}
+				});		
 };	
 
 

@@ -56,6 +56,7 @@ var colors = new Array();
 var sonarType = new Array();
 	sonarType.push("fw");
 	sonarType.push("ss");
+	
 function updateVehicle(num){
 		var path = d3.selectAll(".path"+num)[0][0];
 		var l = path.getTotalLength();
@@ -110,32 +111,54 @@ svgContainer.selectAll(".vehicle").data(d3.selectAll(".paths")[0]).enter().appen
 								cy: p.y
 							})
 						});		
+var prev = [0,0];
 var rotatePaths = d3.behavior.drag()
-	//.origin(function(d){return d;})
-	.on("drag", function(d) {
+	.on("drag", function() {
 	//only drag if it is allowed at the time
 	if(draggable){	
-		console.log(this);
-		var num = this.classList[0].slice(-1); //group number we are working with
-		var x = parseFloat(d3.select(this).attr("cx"));
-		var y = parseFloat(d3.select(this).attr("cy"));		
+		var num = this.classList[0].slice(-1); //group number we are working with	
 		var rect = d3.select(".center"+num);
-		var rectx = parseFloat(rect.attr("x")), recty = parseFloat(rect.attr("y"));
-		var dx = Math.max(0, Math.min(w, d3.event.x));
-		var dy = Math.max(0, Math.min(h, d3.event.y));
+		var evt = d3.event;
+		var rectx = parseFloat(rect.attr("x"))+4, recty = parseFloat(rect.attr("y"))+4;
+		//Don't let it drag outside the container
+		var dx = Math.max(0, Math.min(w, evt.x));
+		var dy = Math.max(0, Math.min(h, evt.y));
 		var theta = Math.atan((recty-dy)/(rectx-dx));
-		var dtheta = Math.atan((recty-y)/(rectx-x))-theta;
-		console.log(theta*180/Math.PI);
+		//convert to degrees and offset by 90 for the different coordinate system
+		var deg = theta*180/Math.PI+90;
+		//console.log(deg);
+
 		if(dx > rectx){
 			dx = (Math.cos(theta)*30) + rectx;
-			dy = (Math.sin(theta)*30) + recty;		
+			dy = (Math.sin(theta)*30) + recty;	
 		}else{
 			dx = rectx-(Math.cos(theta)*30);
 			dy = recty-(Math.sin(theta)*30);
+			//Since Math.atan only goes from -pi to pi, need to adjust
+			if(dy>recty){
+				deg= deg-180;
+			}else{
+				deg= deg-180;
+			}
 		}
-
+		
+		if(deg > 360){
+			deg = deg - 360;
+		}
+		console.log(+rectx, recty);
+		//console.log(deg);
+		//Update the points, this currently breaks dragging
+		d3.selectAll(".line"+num).transition().duration(0).attr("transform","rotate("+deg+","+rectx+","+recty+")");
+		//Update the rotation handle
 		d3.select(this).attr("cx",dx).attr("cy",dy);
-		d3.selectAll(".hinge"+num).attr("d","M"+[(rectx+4),(recty+4)]+"L"+[dx,dy]);
+		//Update the rotation handle line
+		d3.selectAll(".hinge"+num).attr("d","M"+[(rectx),(recty)]+"L"+[dx,dy]);
+		//Update the path
+		var temp = deg;
+		deg = deg- prev[num]; //Change deg to only be the offset in rotation
+		prev[num] = temp; //Set the new previous rotation
+		//console.log(prev);
+		getRotatedPath(num,deg);
 	}
 });						
 svgContainer.selectAll(".rotate").data(lineData).enter().append("g")
@@ -183,8 +206,11 @@ function drawBox(i){
 			.attr("fill", d3.select(node).attr("stroke"))
 			.attr("stroke","black");
 };
-function getRotatedPath(num){
-		var path = Raphael.transformPath(d3.select(".path"+num).attr("d"),"R15"); //get the transformed path
+
+function getRotatedPath(num,rotate){
+		//console.log(rotate);
+		var path = Raphael.transformPath(d3.select(".path"+num).attr("d"),"R"+rotate); //get the transformed path
+		console.log(path);
 		d3.selectAll(".path"+num).attr("d",path.toString());//Rotate the path
 		updateVehicle(num);
 	};

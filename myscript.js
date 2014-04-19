@@ -145,10 +145,9 @@ var rotatePaths = d3.behavior.drag()
 		if(deg > 360){
 			deg = deg - 360;
 		}
-		console.log(+rectx, recty);
 		//console.log(deg);
 		//Update the points, this currently breaks dragging
-		d3.selectAll(".line"+num).transition().duration(0).attr("transform","rotate("+deg+","+rectx+","+recty+")");
+		//d3.selectAll(".line"+num).transition().duration(0).attr("transform","rotate("+deg+","+rectx+","+recty+")");
 		//Update the rotation handle
 		d3.select(this).attr("cx",dx).attr("cy",dy);
 		//Update the rotation handle line
@@ -159,6 +158,7 @@ var rotatePaths = d3.behavior.drag()
 		prev[num] = temp; //Set the new previous rotation
 		//console.log(prev);
 		getRotatedPath(num,deg);
+		getRotatedPoints(num,deg);
 	}
 });						
 svgContainer.selectAll(".rotate").data(lineData).enter().append("g")
@@ -181,7 +181,6 @@ function drawBox(i){
 	var bbox = node.getBBox(); 
 	var xRotate = Math.floor(bbox.x + bbox.width/2.0);
 	var yRotate = Math.floor(bbox.y + bbox.height/2.0);
-	
 	d3.select(".group"+i).append("path")
 				.attr("class", "hinge"+i +" rotate"+i)
 				.attr("d","M"+[(xRotate),(yRotate)]+"V"+(yRotate-30))
@@ -208,13 +207,39 @@ function drawBox(i){
 };
 
 function getRotatedPath(num,rotate){
-		//console.log(rotate);
+		console.log(rotate);
 		var path = Raphael.transformPath(d3.select(".path"+num).attr("d"),"R"+rotate); //get the transformed path
-		console.log(path);
-		d3.selectAll(".path"+num).attr("d",path.toString());//Rotate the path
+		//console.log(path);
+		d3.selectAll(".path"+num).attr("d",Raphael.path2curve(path).toString());//Rotate the path
 		updateVehicle(num);
-	};
-
+};
+function getRotatedPoints(num,deg){
+	var rect = d3.select(".center"+num);
+	var evt = d3.event;
+	var rectx = parseFloat(rect.attr("x"))+4, recty = parseFloat(rect.attr("y"))+4;
+	d3.selectAll(".line"+num)
+						.data(d3.selectAll(".line"+num)[0])
+						.each(function(d,i){
+							//Update point data here
+							deg = deg*Math.PI/180;
+							var dx = parseFloat(d3.select(this).attr("cx")),
+							dy = parseFloat(d3.select(this).attr("cy"));
+							console.log(Math.atan((recty-dy)/(rectx-dx)));
+							deg = Math.atan((recty-dy)/(rectx-dx)) + deg;
+							//var dx = Math.cos(deg)+x, dy = Math.sin(deg)+y;
+							if(dx > rectx){
+								dx = (Math.cos(deg)) + rectx;
+								dy = (Math.sin(deg)) + recty;	
+							}else{
+								dx = rectx-(Math.cos(deg));
+								dy = recty-(Math.sin(deg));
+							}
+							console.log(deg*180/Math.PI);
+							console.log(dx, dy);
+							// d3.select(this).attr("cx",dx);
+							// d3.select(this).attr("cy",dy);
+							});
+};
 function clearAll(){
 	heatmap.clearRect(0,0,canvas.width,canvas.height);
 	heatmap2.clearRect(0,0,canvas2.width,canvas2.height);

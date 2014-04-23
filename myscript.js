@@ -135,19 +135,13 @@ var rotatePaths = d3.behavior.drag()
 			dx = rectx-(Math.cos(theta)*30);
 			dy = recty-(Math.sin(theta)*30);
 			//Since Math.atan only goes from -pi to pi, need to adjust
-			if(dy>recty){
-				deg= deg-180;
-			}else{
-				deg= deg-180;
-			}
+			deg= deg-180;
 		}
 		
 		if(deg > 360){
 			deg = deg - 360;
 		}
-		//console.log(deg);
-		//Update the points, this currently breaks dragging
-		//d3.selectAll(".line"+num).transition().duration(0).attr("transform","rotate("+deg+","+rectx+","+recty+")");
+		//console.log(deg);		
 		//Update the rotation handle
 		d3.select(this).attr("cx",dx).attr("cy",dy);
 		//Update the rotation handle line
@@ -158,6 +152,7 @@ var rotatePaths = d3.behavior.drag()
 		prev[num] = temp; //Set the new previous rotation
 		//console.log(prev);
 		getRotatedPath(num,deg);
+		//Update the points, this currently breaks dragging
 		getRotatedPoints(num,deg);
 	}
 });						
@@ -217,24 +212,34 @@ function getRotatedPoints(num,deg){
 	var rect = d3.select(".center"+num);
 	var evt = d3.event;
 	var rectx = parseFloat(rect.attr("x"))+4, recty = parseFloat(rect.attr("y"))+4;
+	console.log(deg);
+	deg = deg*Math.PI/180;	
+	console.log(rectx,recty);
 	d3.selectAll(".line"+num)
 						.data(d3.selectAll(".line"+num)[0])
 						.each(function(d,i){
 							//Update point data here
-							deg = deg*Math.PI/180;
-							var dx = parseFloat(d3.select(this).attr("cx")),
-							dy = parseFloat(d3.select(this).attr("cy"));
-							console.log(Math.atan((recty-dy)/(rectx-dx)));
-							deg = Math.atan((recty-dy)/(rectx-dx)) + deg;
+
+							var x = parseFloat(d3.select(this).attr("cx")),
+							y = parseFloat(d3.select(this).attr("cy"));
+							var theta = Math.atan((recty-y)/(rectx-x));
+							
+							console.log(theta*180/Math.PI);
+							console.log(x, y);
+							
 							//var dx = Math.cos(deg)+x, dy = Math.sin(deg)+y;
-							if(dx > rectx){
-								dx = (Math.cos(deg)) + rectx;
-								dy = (Math.sin(deg)) + recty;	
-							}else{
-								dx = rectx-(Math.cos(deg));
-								dy = recty-(Math.sin(deg));
+							if(x < rectx){
+								theta = theta - Math.PI/2;
 							}
+							theta = theta + deg;
 							console.log(deg*180/Math.PI);
+							if(theta<0){
+								theta = theta+2*Math.PI;
+							}
+						
+							var dx = Math.cos(theta)+x,
+							dy = Math.sin(theta)+y;
+							console.log(theta*180/Math.PI);
 							console.log(dx, dy);
 							// d3.select(this).attr("cx",dx);
 							// d3.select(this).attr("cy",dy);

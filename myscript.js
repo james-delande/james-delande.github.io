@@ -246,10 +246,8 @@ function getRotatedPoints(num,deg){
 								dy = Math.sin(theta)*hyp + recty;
 							}else{
 								dx = rectx-(Math.cos(theta)*hyp);
-								dy = recty-(Math.sin(theta)*hyp);
-								
+								dy = recty-(Math.sin(theta)*hyp);								
 							}
-
 							d3.select(this).attr("cx",dx);
 							d3.select(this).attr("cy",dy);
 							//Update line data
@@ -288,6 +286,7 @@ function transition() {
 									}else{
 										p1 = d.getPointAtLength((t-.0001) * l);
 									}
+
 									if(sonarType[i]==="fw"){
 										drawForwardSonar(p,p1,i);
 									}else if(sonarType[i]==="ss"){
@@ -295,11 +294,12 @@ function transition() {
 									}else{
 										console.log("i = "+i);
 									}
+									
 									return "translate("+[(p.x-d.getPointAtLength(0).x), (p.y - d.getPointAtLength(0).y)] + ")";
 								}
 							})
 		.each("start",function(d,i){
-					console.log(d);
+					//console.log(d);
 					var p = d.getPointAtLength(0);
 					d3.selectAll(".UUV"+i).attr({
 											cx: p.x,
@@ -334,7 +334,7 @@ function drawHeatMap(colorScale,count){
 			min = imageData[i];
 		}		
 	}
-	console.log(min, max);
+	//console.log(min, max);
 	if(count === 1){
 		max = 6;
 	}
@@ -377,7 +377,7 @@ function drawHeatMap(colorScale,count){
 		percents[i] = percents[i]/(imageData.length/4);
 		total +=percents[i];		
 	}
-	console.log(percents);
+	//console.log(percents);
 	image.data = imageData;
 	heatmap3.putImageData(image,0,0);
 	drawLegend(percents);
@@ -458,7 +458,7 @@ function drawInTime(start, end){
 };	
 
 
-function drawForwardSonar(p,p1,color){		
+function drawForwardSonar(p,p1,num){	
 		heatmap.clearRect(0,0,canvas.width,canvas.height);
 		var heading = Math.atan2((p.y-p1.y),(p.x-p1.x));//heading in radians, 0 is 3 O'Clock
 		// console.log(Math.atan2((p.y-p1.y),(p.x-p1.x)));
@@ -482,14 +482,12 @@ function drawForwardSonar(p,p1,color){
 		heatmap.fill();
 		heatmap.closePath();
 		
-		var temp = heatmap.getImageData(0,0,canvas2.width,canvas2.height);
-		scaleHeatMap(temp);				
+		var temp = heatmap.getImageData(0,0,canvas.width,canvas.height);
+		scaleHeatMap(temp,num);				
 };
 
-function drawSideScanSonar(p,p1,color){
-		//console.log(color);
-		//console.log(p);
-		heatmap2.clearRect(0,0,canvas2.width,canvas2.height);
+function drawSideScanSonar(p,p1,num){
+		heatmap.clearRect(0,0,canvas.width,canvas.height);
 		var heading = Math.atan2((p.y-p1.y),(p.x-p1.x));//heading in radians, 0 is 3 O'Clock
 		if(isNaN(heading)){//we are going vertically, i.e. p1.x == p.x
 			if(p.y>p1.y){
@@ -503,24 +501,23 @@ function drawSideScanSonar(p,p1,color){
 		var perp = [heading+Math.PI/2, heading-Math.PI/2];
 		var center = [p.x+sonarRange * Math.cos(perp[0]), p.y+sonarRange * Math.sin(perp[0]),
 					p.x+sonarRange * Math.cos(perp[1]), p.y+sonarRange * Math.sin(perp[1])];
-		heatmap2.fillStyle = "rgba(1,1,1,1)";
-		//heatmap2.globalAlpha=.5;
-		heatmap2.beginPath();		
-		heatmap2.lineTo(center[0]+sonarRange*Math.cos(perp[0]-sonarAngle),center[1]+sonarRange*Math.sin(perp[0]-sonarAngle));
-		heatmap2.moveTo(p.x,p.y);
-		heatmap2.arc(center[0],center[1], sonarRange/2, perp[0]-sonarAngle, perp[0]+sonarAngle, false);
-		heatmap2.moveTo(p.x,p.y);
-		heatmap2.lineTo(center[2]+sonarRange*Math.cos(perp[1]-sonarAngle),center[3]+sonarRange*Math.sin(perp[1]-sonarAngle));
-		heatmap2.moveTo(p.x,p.y);
-		heatmap2.arc(center[2],center[3], sonarRange/2, perp[1]-sonarAngle, perp[1]+sonarAngle, false);
-		heatmap2.fill();
-		heatmap2.closePath();	
+		heatmap.fillStyle = "rgba(1,1,1,1)";
+		heatmap.beginPath();		
+		heatmap.lineTo(center[0]+sonarRange*Math.cos(perp[0]-sonarAngle),center[1]+sonarRange*Math.sin(perp[0]-sonarAngle));
+		heatmap.moveTo(p.x,p.y);
+		heatmap.arc(center[0],center[1], sonarRange/2, perp[0]-sonarAngle, perp[0]+sonarAngle, false);
+		heatmap.moveTo(p.x,p.y);
+		heatmap.lineTo(center[2]+sonarRange*Math.cos(perp[1]-sonarAngle),center[3]+sonarRange*Math.sin(perp[1]-sonarAngle));
+		heatmap.moveTo(p.x,p.y);
+		heatmap.arc(center[2],center[3], sonarRange/2, perp[1]-sonarAngle, perp[1]+sonarAngle, false);
+		heatmap.fill();
+		heatmap.closePath();	
 		//heatmap2.stroke();		
-		var temp = heatmap2.getImageData(0,0,canvas2.width,canvas2.height);
-		scaleHeatMap(temp);		
+		var temp = heatmap.getImageData(0,0,canvas.width,canvas.height);
+		scaleHeatMap(temp,num);		
 };
 
-function scaleHeatMap(temp){
+function scaleHeatMap(temp,num){
 	var imageData = image.data, tempData = temp.data;
 	for (var i=0;i<imageData.length;i+=4){
 		if(tempData[i]!=0){
@@ -528,4 +525,18 @@ function scaleHeatMap(temp){
 		}
 	}
 	image.data = imageData;
+};
+function greyscale(){
+	  var d = image.data;
+	  for (var i=0; i<d.length; i+=4) {
+		var r = d[i];
+		var g = d[i+1];
+		var b = d[i+2];
+		// CIE luminance for the RGB
+		// The human eye is bad at seeing red and blue, so we de-emphasize them.
+		var v = 0.2126*r + 0.7152*g + 0.0722*b;
+		d[i] = d[i+1] = d[i+2] = v
+	  }
+	image.data = d;
+	heatmap3.putImageData(image,0,0);
 };

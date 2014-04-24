@@ -95,6 +95,41 @@ var dragPoint = d3.behavior.drag()
 		drawBox(num);
 	}
 });	
+
+var dragGroup = d3.behavior.drag()
+	.on("drag", function(d,i) {
+	//only drag if it is allowed at the time
+	if(draggable){
+		var num = this.classList[0].slice(-1); //Path number we are working with
+		var mx = Math.max(0, Math.min(w, d3.event.x)),
+			my = Math.max(0, Math.min(h, d3.event.y)); //Mouse event x,y
+		var x = parseFloat(d3.select(this).attr("x"))+4,
+			y = parseFloat(d3.select(this).attr("y"))+4;//Center of the box
+		var dx = mx - x, dy = my - y; //Change in x,y
+
+		d3.select(this).attr("x",mx-4).attr("y",my-4);
+		
+		d3.selectAll(".line"+num)
+					.data(d3.selectAll(".line"+num)[0])
+					.each(function(d,i){
+						//Update point data here
+						var px = parseFloat(d3.select(this).attr("cx")) + dx,
+						py = parseFloat(d3.select(this).attr("cy")) + dy;
+						d3.select(this).attr("cx",px);
+						d3.select(this).attr("cy",py);
+						//Update line data
+						lineData[num][i].x = xscale.invert(px);
+						lineData[num][i].y = yscale.invert(py);
+						});
+	// //Update path data
+	d3.selectAll(".path"+num).attr("d", lineFunction(lineData[num]));
+	// //Update vehicle location
+	updateVehicle(num);
+	d3.select(".center"+num).remove();
+	d3.selectAll(".rotate"+num).remove();
+	drawBox(num);
+	}
+});	
 singleSlider(15);
 svgContainer.selectAll(".path").data(lineData).enter().append("path")
 						.attr("class", function(d,i){return "paths path"+i})
@@ -155,9 +190,6 @@ var rotatePaths = d3.behavior.drag()
 		var temp = deg;
 		deg = deg- prev[num]; //Change deg to only be the offset in rotation
 		prev[num] = temp; //Set the new previous rotation
-		// console.log(prev[num]);
-		// console.log(theta);
-		//getRotatedPath(num,deg);
 		//Update the points, this currently breaks dragging
 		getRotatedPoints(num,deg);
 	}
@@ -217,7 +249,8 @@ function drawBox(i){
 			.attr("width",8)
 			.attr("height",8)
 			.attr("fill", d3.select(node).attr("stroke"))
-			.attr("stroke","black");
+			.attr("stroke","black")
+			.call(dragGroup);
 };
 
 function getRotatedPoints(num,deg){
@@ -253,11 +286,11 @@ function getRotatedPoints(num,deg){
 							//Update line data
 							lineData[num][i].x = xscale.invert(dx);
 							lineData[num][i].y = yscale.invert(dy);
-							//Update path data
-							d3.selectAll(".path"+num).attr("d", lineFunction(lineData[num]));
-							//Update vehicle location
-							updateVehicle(num);
 							});
+	//Update path data
+	d3.selectAll(".path"+num).attr("d", lineFunction(lineData[num]));
+	//Update vehicle location
+	updateVehicle(num);
 };
 function clearAll(){
 	heatmap.clearRect(0,0,canvas.width,canvas.height);

@@ -72,15 +72,16 @@ var dragPoint = d3.behavior.drag()
 	//only drag if it is allowed at the time
 	if(draggable){
 		var num = this.classList[0].slice(-1); //Path number we are working with
-		d.x = Math.max(0, Math.min(w, d3.event.x));
-		d.y = Math.max(0, Math.min(h, d3.event.y));
+		var dx = Math.max(0, Math.min(w, d3.event.x));
+		var dy = Math.max(0, Math.min(h, d3.event.y));
 		//set point location
-		d3.select(this).attr("cx", d.x).attr("cy",d.y);
+		//console.log(num, i);
+		d3.select(this).attr("cx", dx).attr("cy",dy);
 		//Update vehicle location 
 		updateVehicle(num);
 		//Now working with rest of line data, need to invert to SVG coordinate system for continuity
-		d.x = xscale.invert(d.x);
-		d.y = yscale.invert(d.y);
+		lineData[num][i].x = xscale.invert(dx);
+		lineData[num][i].y = yscale.invert(dy);
 		//Update path with new line data
 		d3.selectAll(".path"+num).attr("d", lineFunction(lineData[num]));
 
@@ -141,7 +142,6 @@ var rotatePaths = d3.behavior.drag()
 		if(deg > 360){
 			deg = deg - 360;
 		}
-		//console.log(deg);		
 		//Update the rotation handle
 		d3.select(this).attr("cx",dx).attr("cy",dy);
 		//Update the rotation handle line
@@ -150,8 +150,9 @@ var rotatePaths = d3.behavior.drag()
 		var temp = deg;
 		deg = deg- prev[num]; //Change deg to only be the offset in rotation
 		prev[num] = temp; //Set the new previous rotation
-		//console.log(prev);
-		getRotatedPath(num,deg);
+		// console.log(prev[num]);
+		// console.log(theta);
+		//getRotatedPath(num,deg);
 		//Update the points, this currently breaks dragging
 		getRotatedPoints(num,deg);
 	}
@@ -174,18 +175,31 @@ svgContainer.selectAll(".rotate").data(lineData).enter().append("g")
 function drawBox(i){
 	var node = d3.select(".path"+i).node();
 	var bbox = node.getBBox(); 
-	var xRotate = Math.floor(bbox.x + bbox.width/2.0);
-	var yRotate = Math.floor(bbox.y + bbox.height/2.0);
+	var xBox = Math.floor(bbox.x + bbox.width/2.0);
+	var yBox = Math.floor(bbox.y + bbox.height/2.0);
+	var dx = xBox, dy = yBox-30;
+	var theta = Math.atan((yBox-dy)/(xBox-dx))+(prev[i]*Math.PI/180);
+	//convert to degrees and offset by 90 for the different coordinate system
+
+	if(dx > xBox){
+		dx = (Math.cos(theta)*30) + xBox;
+		dy = (Math.sin(theta)*30) + yBox;	
+	}else{
+		dx = xBox-(Math.cos(theta)*30);
+		dy = yBox-(Math.sin(theta)*30);
+		//Since Math.atan only goes from -pi to pi, need to adjust
+	}
+	//d3.selectAll(".hinge"+num).attr("d","M"+[(rectx),(recty)]+"L"+[dx,dy]);
 	d3.select(".group"+i).append("path")
 				.attr("class", "hinge"+i +" rotate"+i)
-				.attr("d","M"+[(xRotate),(yRotate)]+"V"+(yRotate-30))
+				.attr("d","M"+[(xBox),(yBox)]+"L"+[dx,dy])
 				.attr("stroke","gray")
 				.style("stroke-dasharray", ("2,1"));
 				
 	d3.select(".group"+i).append("circle")
 				.attr("class", "handle"+i +" rotate"+i)
-				.attr("cx",xRotate)
-				.attr("cy",yRotate-30)
+				.attr("cx",dx)
+				.attr("cy",dy)
 				.attr("r",5)
 				.attr("stroke","black")
 				.attr("fill", "gray")
@@ -193,56 +207,53 @@ function drawBox(i){
 				
 	d3.select(".group"+i).append("rect")
 			.attr("class", "center"+i)
-			.attr("x",xRotate-4)
-			.attr("y",yRotate-4)
+			.attr("x",xBox-4)
+			.attr("y",yBox-4)
 			.attr("width",8)
 			.attr("height",8)
 			.attr("fill", d3.select(node).attr("stroke"))
 			.attr("stroke","black");
 };
 
-function getRotatedPath(num,rotate){
-		console.log(rotate);
-		var path = Raphael.transformPath(d3.select(".path"+num).attr("d"),"R"+rotate); //get the transformed path
-		//console.log(path);
-		d3.selectAll(".path"+num).attr("d",Raphael.path2curve(path).toString());//Rotate the path
-		updateVehicle(num);
-};
 function getRotatedPoints(num,deg){
 	var rect = d3.select(".center"+num);
 	var evt = d3.event;
 	var rectx = parseFloat(rect.attr("x"))+4, recty = parseFloat(rect.attr("y"))+4;
-	console.log(deg);
+	//console.log(deg);
 	deg = deg*Math.PI/180;	
-	console.log(rectx,recty);
+	//console.log(rectx,recty);
 	d3.selectAll(".line"+num)
 						.data(d3.selectAll(".line"+num)[0])
 						.each(function(d,i){
 							//Update point data here
-
 							var x = parseFloat(d3.select(this).attr("cx")),
 							y = parseFloat(d3.select(this).attr("cy"));
 							var theta = Math.atan((recty-y)/(rectx-x));
-							
-							console.log(theta*180/Math.PI);
-							console.log(x, y);
-							
-							//var dx = Math.cos(deg)+x, dy = Math.sin(deg)+y;
-							if(x < rectx){
-								theta = theta - Math.PI/2;
-							}
+							var hyp = Math.sqrt(Math.pow(rectx-x,2)+Math.pow(recty-y,2));
+
 							theta = theta + deg;
-							console.log(deg*180/Math.PI);
 							if(theta<0){
 								theta = theta+2*Math.PI;
+							}							
+							var dx,dy;
+							if(x > rectx){
+								dx = Math.cos(theta)*hyp + rectx;
+								dy = Math.sin(theta)*hyp + recty;
+							}else{
+								dx = rectx-(Math.cos(theta)*hyp);
+								dy = recty-(Math.sin(theta)*hyp);
+								
 							}
-						
-							var dx = Math.cos(theta)+x,
-							dy = Math.sin(theta)+y;
-							console.log(theta*180/Math.PI);
-							console.log(dx, dy);
-							// d3.select(this).attr("cx",dx);
-							// d3.select(this).attr("cy",dy);
+
+							d3.select(this).attr("cx",dx);
+							d3.select(this).attr("cy",dy);
+							//Update line data
+							lineData[num][i].x = xscale.invert(dx);
+							lineData[num][i].y = yscale.invert(dy);
+							//Update path data
+							d3.selectAll(".path"+num).attr("d", lineFunction(lineData[num]));
+							//Update vehicle location
+							updateVehicle(num);
 							});
 };
 function clearAll(){
@@ -448,7 +459,6 @@ function drawForwardSonar(p,p1,color){
 		var heading = Math.atan2((p.y-p1.y),(p.x-p1.x));//heading in radians, 0 is 3 O'Clock
 		// console.log(Math.atan2((p.y-p1.y),(p.x-p1.x)));
 		// var heading = parseFloat(p.alpha);
-		// console.log(parseFloat(Raphael.rad(p.alpha)));
 		if(isNaN(heading)){//we are going vertically, i.e. p1.x == p.x
 			if(p.y>p1.y){
 				heading = Math.PI/2;

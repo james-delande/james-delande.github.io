@@ -343,16 +343,17 @@ function transition() {
 };
 
 function finish(){
-		var colorScale = d3.scale.quantize()
-						 .domain([0,6])
-						 .range(scaleColors);
-		drawHeatMap(colorScale,6);
+
+		drawHeatMap(6);
 		document.getElementById("transition").disabled = false;
 		d3.selectAll(".slider").style("pointer-events","auto");
 		draggable = true;//Now we can allow dragging again
 };
 
-function drawHeatMap(colorScale,count){
+function drawHeatMap(count){
+	var colorScale = d3.scale.quantize()
+						 .domain([0,6])
+						 .range(scaleColors);
 	heatmap.clearRect(0,0,canvas.width,canvas.height);
 	heatmap2.clearRect(0,0,canvas2.width,canvas2.height);
 	var imageData = image.data;	//It's faster to work with a reference
@@ -447,13 +448,7 @@ function drawLegend(percents){
 //convert hex to decimal
 function h2d(h) {return parseInt(h,16);};
 
-function instant(count){
-	var colorScale = d3.scale.quantize()
-					 .domain([0,6])
-					 .range(scaleColors);
-	drawHeatMap(colorScale,count);
-	//image = heatmap3.createImageData(canvas2.width,canvas2.height); 
-};
+
 function drawInTime(start, end){
 	var count = 0;
 	clearAll();
@@ -485,7 +480,7 @@ function drawInTime(start, end){
 									cy: p.y									
 								});
 								if(i===(sonarType.length-1)){
-									instant(count/2)
+									drawHeatMap(count/2)
 								}
 				});		
 };	

@@ -35,8 +35,7 @@ heatmap3 = canvas3.getContext('2d');
 
 var image = heatmap3.createImageData(canvas2.width,canvas2.height); 
 
-var sonarRange = 100, sonarAngle = Math.PI/4,
-	last = 0, samples=0, draggable = true;
+var sonarRange = 100, sonarAngle = Math.PI/4, draggable = true;
 
 var lineData = new Array();
 	lineData.push([{ "x": 0,   "y": 500},  { "x": 200,  "y": 500},
@@ -60,7 +59,13 @@ var sonarType = new Array();
 function updateVehicle(num){
 		var path = d3.selectAll(".path"+num)[0][0];
 		var l = path.getTotalLength();
-		var time = xSliderScale.invert(d3.select(".handle").attr("cx"))/100;
+		var x;
+		if(d3.select(".handle")[0][0] != null){
+			x = d3.select(".handle").attr("cx");
+		}else{
+			x = d3.select(".extent").attr("x");
+		}
+		var time = xSliderScale.invert(x)/100;
 		var p = path.getPointAtLength(time * l);
 		d3.selectAll(".UUV"+num).attr({
 								cx: p.x,
@@ -116,7 +121,7 @@ var prev = [0,0];
 var rotatePaths = d3.behavior.drag()
 	.on("drag", function() {
 	//only drag if it is allowed at the time
-	if(draggable){	
+	if(draggable){
 		var num = this.classList[0].slice(-1); //group number we are working with	
 		var rect = d3.select(".center"+num);
 		var evt = d3.event;
@@ -262,7 +267,6 @@ function clearAll(){
 	heatmap3.clearRect(0,0,canvas3.width,canvas3.height);
 	image = heatmap3.createImageData(canvas3.width,canvas3.height);
 	d3.select(".legendSVG").remove();
-	last = 0;
 };
 function transition() {
 	document.getElementById("transition").disabled = true;
@@ -517,7 +521,6 @@ function drawSideScanSonar(p,p1,color){
 };
 
 function scaleHeatMap(temp){
-	samples++;
 	var imageData = image.data, tempData = temp.data;
 	for (var i=0;i<imageData.length;i+=4){
 		if(tempData[i]!=0){

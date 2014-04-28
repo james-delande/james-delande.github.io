@@ -458,7 +458,7 @@ function drawInTime(start, end){
 								var l = d.getTotalLength();
 								var p,p1;
 								//console.log(timeScale(start),timeScale(end));
-								for(time=timeScale(start);time<=timeScale(end);time+=.01){
+								for(time=timeScale(start);time<=timeScale(end);time+=.005){
 									p = d.getPointAtLength(time * l);
 									if(time-.0001 < 0){
 										p1 = d.getPointAtLength(0);
@@ -501,6 +501,7 @@ function drawForwardSonar(p,p1,num){
 		}
 		//console.log(heading);
 		var center = [p.x+sonarRange * Math.cos(heading), p.y+sonarRange * Math.sin(heading)];
+		//heatmap.globalCompositeOperation = "lighter";
 		heatmap.fillStyle =  "rgba(1,1,1,1)";
 		//heatmap.globalAlpha=.5;
 		heatmap.beginPath();		
@@ -526,6 +527,7 @@ function drawSideScanSonar(p,p1,num){
 			console.log(heading);
 		}
 		//console.log(heading);
+		//heatmap.globalCompositeOperation = "lighter";
 		var perp = [heading+Math.PI/2, heading-Math.PI/2];
 		var center = [p.x+sonarRange * Math.cos(perp[0]), p.y+sonarRange * Math.sin(perp[0]),
 					p.x+sonarRange * Math.cos(perp[1]), p.y+sonarRange * Math.sin(perp[1])];

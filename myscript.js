@@ -38,11 +38,18 @@ var image = heatmap3.createImageData(canvas2.width,canvas2.height);
 var sonarRange = 100, sonarAngle = Math.PI/4, draggable = true;
 
 var lineData = new Array();
-	lineData.push([{ "x": 0,   "y": 500},  { "x": 200,  "y": 500},
-                 { "x": 0,  "y": 700}, { "x": 200,  "y": 700}]);
+	lineData.push([{ "x": 100,   "y": -100},  { "x": 300,  "y": -100},
+                 { "x": 100,  "y": 100}, { "x": 300,  "y": 100}]);
+	lineData.push([{ "x": -400,   "y": 400},  { "x": -200,  "y": 400},
+                 { "x": -400,  "y": 600}, { "x": -200,  "y": 600}]);		 
+	lineData.push([{ "x": 700,   "y": 400},  { "x": 900,  "y": 400},
+                 { "x": 700,  "y": 600}, { "x": 900,  "y": 600}]);
+	lineData.push([{ "x": 1000,   "y": 1000},  { "x": 1200,  "y": 1000},
+                 { "x": 1000,  "y": 1200}, { "x": 1200,  "y": 1200}]);
 	lineData.push([{ "x": 100,   "y": 1000},  { "x": 300,  "y": 1000},
-                 { "x": 100,  "y": 1200}, { "x": 300,  "y": 1200}]);		 
-
+                 { "x": 100,  "y": 1200}, { "x": 300,  "y": 1200}]);	
+	lineData.push([{ "x": -600,   "y": 1000},  { "x": -400,  "y": 1000},
+                 { "x": -600,  "y": 1200}, { "x": -400,  "y": 1200}]);				 
 //Create the path line
 var lineFunction = d3.svg.line()
                          .x(function(d) { return xscale(d.x); })
@@ -51,11 +58,18 @@ var lineFunction = d3.svg.line()
 
 var colors = new Array();
 	colors.push(d3.rgb("red"));
+	colors.push(d3.rgb("blue"));
 	colors.push(d3.rgb("green"));
+	colors.push(d3.rgb("cyan"));
+	colors.push(d3.rgb("magenta"));
+	colors.push(d3.rgb("orange"));
 var sonarType = new Array();
 	sonarType.push("fw");
 	sonarType.push("ss");
-	
+	sonarType.push("fw");
+	sonarType.push("ss");
+	sonarType.push("fw");
+	sonarType.push("ss");	
 function updateVehicle(num){
 		var path = d3.selectAll(".path"+num)[0][0];
 		var l = path.getTotalLength();
@@ -152,7 +166,7 @@ svgContainer.selectAll(".vehicle").data(d3.selectAll(".paths")[0]).enter().appen
 								cy: p.y
 							})
 						});		
-var prev = [0,0];
+var prev = [0,0,0,0,0,0];
 var rotatePaths = d3.behavior.drag()
 	.on("drag", function() {
 	//only drag if it is allowed at the time
@@ -369,8 +383,8 @@ function drawHeatMap(count){
 		}		
 	}
 	//console.log(min, max);
-	if(count === 1){
-		max = 6;
+	if(count <= 6){
+		max = count;
 	}
 	for (var i=0;i<imageData.length;i+=4){
 		var col = colorScale(Math.round((imageData[i]/max)*6));
@@ -457,7 +471,7 @@ function drawInTime(start, end){
 			.each(function(d,i){ 
 								var l = d.getTotalLength();
 								var p,p1;
-								//console.log(timeScale(start),timeScale(end));
+								//console.log(i);
 								for(time=timeScale(start);time<=timeScale(end);time+=.005){
 									p = d.getPointAtLength(time * l);
 									if(time-.0001 < 0){
@@ -480,7 +494,7 @@ function drawInTime(start, end){
 									cy: p.y									
 								});
 								if(i===(sonarType.length-1)){
-									drawHeatMap(count/2)
+									drawHeatMap(count)
 								}
 				});		
 };	

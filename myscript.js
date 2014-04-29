@@ -167,6 +167,7 @@ svgContainer.selectAll(".vehicle").data(d3.selectAll(".paths")[0]).enter().appen
 							})
 						});		
 var prev = [0,0,0,0,0,0];
+var scale = [30,30,30,30,30,30];
 var rotatePaths = d3.behavior.drag()
 	.on("drag", function() {
 	//only drag if it is allowed at the time
@@ -182,17 +183,21 @@ var rotatePaths = d3.behavior.drag()
 		//convert to degrees and offset by 90 for the different coordinate system
 		var deg = theta*180/Math.PI+90;
 		//console.log(deg);
+		var dist = Math.sqrt(Math.pow(rectx-dx,2)+Math.pow(recty-dy,2));
 
 		if(dx > rectx){
-			dx = (Math.cos(theta)*30) + rectx;
-			dy = (Math.sin(theta)*30) + recty;	
+			dx = (Math.cos(theta)*dist) + rectx;
+			dy = (Math.sin(theta)*dist) + recty;	
 		}else{
-			dx = rectx-(Math.cos(theta)*30);
-			dy = recty-(Math.sin(theta)*30);
+			dx = rectx-(Math.cos(theta)*dist);
+			dy = recty-(Math.sin(theta)*dist);
 			//Since Math.atan only goes from -pi to pi, need to adjust
 			deg= deg-180;
 		}
-		
+		var temp = dist;
+		dist = dist/scale[num];
+		scale[num] = temp;
+		console.log(dist);
 		if(deg > 360){
 			deg = deg - 360;
 		}
@@ -201,11 +206,11 @@ var rotatePaths = d3.behavior.drag()
 		//Update the rotation handle line
 		d3.selectAll(".hinge"+num).attr("d","M"+[(rectx),(recty)]+"L"+[dx,dy]);
 		//Update the path
-		var temp = deg;
+		temp = deg;
 		deg = deg- prev[num]; //Change deg to only be the offset in rotation
 		prev[num] = temp; //Set the new previous rotation
 		//Update the points, this currently breaks dragging
-		getRotatedPoints(num,deg);
+		getRotatedPoints(num,deg,dist);
 	}
 });						
 svgContainer.selectAll(".rotate").data(lineData).enter().append("g")
@@ -228,16 +233,16 @@ function drawBox(i){
 	var bbox = node.getBBox(); 
 	var xBox = Math.floor(bbox.x + bbox.width/2.0);
 	var yBox = Math.floor(bbox.y + bbox.height/2.0);
-	var dx = xBox, dy = yBox-30;
+	var dx = xBox, dy = yBox-scale[i];
 	var theta = Math.atan((yBox-dy)/(xBox-dx))+(prev[i]*Math.PI/180);
 	//convert to degrees and offset by 90 for the different coordinate system
 
 	if(dx > xBox){
-		dx = (Math.cos(theta)*30) + xBox;
-		dy = (Math.sin(theta)*30) + yBox;	
+		dx = (Math.cos(theta)*scale[i]) + xBox;
+		dy = (Math.sin(theta)*scale[i]) + yBox;	
 	}else{
-		dx = xBox-(Math.cos(theta)*30);
-		dy = yBox-(Math.sin(theta)*30);
+		dx = xBox-(Math.cos(theta)*scale[i]);
+		dy = yBox-(Math.sin(theta)*scale[i]);
 		//Since Math.atan only goes from -pi to pi, need to adjust
 	}
 	//d3.selectAll(".hinge"+num).attr("d","M"+[(rectx),(recty)]+"L"+[dx,dy]);
@@ -267,7 +272,7 @@ function drawBox(i){
 			.call(dragGroup);
 };
 
-function getRotatedPoints(num,deg){
+function getRotatedPoints(num,deg,scale){
 	var rect = d3.select(".center"+num);
 	var evt = d3.event;
 	var rectx = parseFloat(rect.attr("x"))+4, recty = parseFloat(rect.attr("y"))+4;
@@ -289,12 +294,13 @@ function getRotatedPoints(num,deg){
 							}							
 							var dx,dy;
 							if(x > rectx){
-								dx = Math.cos(theta)*hyp + rectx;
-								dy = Math.sin(theta)*hyp + recty;
+								dx = Math.cos(theta)*hyp*scale + rectx;
+								dy = Math.sin(theta)*hyp*scale + recty;
 							}else{
-								dx = rectx-(Math.cos(theta)*hyp);
-								dy = recty-(Math.sin(theta)*hyp);								
+								dx = rectx-(Math.cos(theta)*hyp)*scale;
+								dy = recty-(Math.sin(theta)*hyp)*scale;								
 							}
+
 							d3.select(this).attr("cx",dx);
 							d3.select(this).attr("cy",dy);
 							//Update line data

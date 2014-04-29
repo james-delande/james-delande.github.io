@@ -334,13 +334,7 @@ function transition() {
 										p1 = d.getPointAtLength((t-.0001) * l);
 									}
 
-									if(sonarType[i]==="fw"){
-										drawForwardSonar(p,p1,i);
-									}else if(sonarType[i]==="ss"){
-										drawSideScanSonar(p,p1,i);
-									}else{
-										console.log("i = "+i);
-									}
+									drawSonar(p,p1,i);
 									
 									return "translate("+[(p.x-d.getPointAtLength(0).x), (p.y - d.getPointAtLength(0).y)] + ")";
 								}
@@ -357,8 +351,7 @@ function transition() {
 };
 
 function finish(){
-
-		drawHeatMap(6);
+		drawHeatMap(7);
 		document.getElementById("transition").disabled = false;
 		d3.selectAll(".slider").style("pointer-events","auto");
 		draggable = true;//Now we can allow dragging again
@@ -387,7 +380,7 @@ function drawHeatMap(count){
 		max = count;
 	}
 	for (var i=0;i<imageData.length;i+=4){
-		var col = colorScale(Math.round((imageData[i]/max)*6));
+		var col = colorScale(Math.ceil((imageData[i]/max)*6));
 		for(var j = 0; j<3;j++){
 			imageData[i+j] = h2d(col.substring(2*j+1,2*j+3));
 		}
@@ -479,27 +472,30 @@ function drawInTime(start, end){
 									}else{
 										p1 = d.getPointAtLength((time-.0001) * l);
 									}
-									if(sonarType[i]==="fw"){
-										drawForwardSonar(p,p1,i);
-									}else if(sonarType[i]==="ss"){
-										drawSideScanSonar(p,p1,i);
-									}else{
-										console.log("fail");
-									}
+									drawSonar(p,p1,i);
 									count++;
-								}									
+								}	
+								if(i===(sonarType.length-1)){
+										drawHeatMap(count)
+								}
 								p = d.getPointAtLength(timeScale(end)*l);
 								d3.select(this).attr({
 									cx: p.x,
 									cy: p.y									
 								});
-								if(i===(sonarType.length-1)){
-									drawHeatMap(count)
-								}
+
 				});		
 };	
 
-
+function drawSonar(p,p1,num){
+	if(sonarType[num]==="fw"){
+		drawForwardSonar(p,p1,num);
+	}else if(sonarType[num]==="ss"){
+		drawSideScanSonar(p,p1,num);
+	}else{
+		console.log("fail");
+	}
+};
 function drawForwardSonar(p,p1,num){	
 		heatmap.clearRect(0,0,canvas.width,canvas.height);
 		var heading = Math.atan2((p.y-p1.y),(p.x-p1.x));//heading in radians, 0 is 3 O'Clock
@@ -516,7 +512,7 @@ function drawForwardSonar(p,p1,num){
 		//console.log(heading);
 		var center = [p.x+sonarRange * Math.cos(heading), p.y+sonarRange * Math.sin(heading)];
 		//heatmap.globalCompositeOperation = "lighter";
-		heatmap.fillStyle =  "rgba(1,1,1,1)";
+		heatmap.fillStyle =  "rgba(1,0,0,1)";
 		//heatmap.globalAlpha=.5;
 		heatmap.beginPath();		
 		heatmap.lineTo(center[0]+sonarRange*Math.cos(heading-sonarAngle),center[1]+sonarRange*Math.sin(heading-sonarAngle));
@@ -545,7 +541,7 @@ function drawSideScanSonar(p,p1,num){
 		var perp = [heading+Math.PI/2, heading-Math.PI/2];
 		var center = [p.x+sonarRange * Math.cos(perp[0]), p.y+sonarRange * Math.sin(perp[0]),
 					p.x+sonarRange * Math.cos(perp[1]), p.y+sonarRange * Math.sin(perp[1])];
-		heatmap.fillStyle = "rgba(1,1,1,1)";
+		heatmap.fillStyle = "rgba(1,0,0,1)";
 		heatmap.beginPath();		
 		heatmap.lineTo(center[0]+sonarRange*Math.cos(perp[0]-sonarAngle),center[1]+sonarRange*Math.sin(perp[0]-sonarAngle));
 		heatmap.moveTo(p.x,p.y);

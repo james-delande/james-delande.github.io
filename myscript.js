@@ -29,11 +29,13 @@ heatmap = canvas.getContext('2d');
 
 var canvas2 = document.getElementById('heatmap2');
 heatmap2 = canvas2.getContext('2d');
-
-var canvas3 = document.getElementById('heatmap3');
-heatmap3 = canvas3.getContext('2d');
-
-var image = heatmap3.createImageData(canvas2.width,canvas2.height); 
+var image = heatmap2.createImageData(canvas2.width,canvas2.height);
+//create off screen canvas
+var off = document.createElement('canvas');
+off.width = w;
+off.height = h;
+var ctx = off.getContext('2d');
+ 
 
 var sonarRange = 100, sonarAngle = Math.PI/4, draggable = true;
 
@@ -197,7 +199,6 @@ var rotatePaths = d3.behavior.drag()
 		var temp = dist;
 		dist = dist/scale[num];
 		scale[num] = temp;
-		console.log(dist);
 		if(deg > 360){
 			deg = deg - 360;
 		}
@@ -314,8 +315,7 @@ function getRotatedPoints(num,deg,scale){
 function clearAll(){
 	heatmap.clearRect(0,0,canvas.width,canvas.height);
 	heatmap2.clearRect(0,0,canvas2.width,canvas2.height);
-	heatmap3.clearRect(0,0,canvas3.width,canvas3.height);
-	image = heatmap3.createImageData(canvas3.width,canvas3.height);
+	image = heatmap2.createImageData(canvas2.width,canvas2.height);
 	d3.select(".legendSVG").remove();
 };
 function transition() {
@@ -323,7 +323,9 @@ function transition() {
 	d3.selectAll(".slider").style("pointer-events","none");
 	clearAll();
 	draggable = false; //Don't allow path dragging during transition
-
+	var gCO = ctx.globalCompositeOperation;
+	ctx.globalCompositeOperation = "lighter";
+	ctx.fillStyle = "rgba(1,1,1,1)";
 	d3.selectAll(".vehicle")
 		.data(d3.selectAll(".paths")[0])
 		.transition()
@@ -338,8 +340,15 @@ function transition() {
 									}else{
 										p1 = d.getPointAtLength((t-.0001) * l);
 									}
-
+			
 									drawSonar(p,p1,i);
+
+									var temp = ctx.getImageData(0,0,off.width,off.height);
+									scaleHeatMap(temp);
+									ctx.clearRect(0,0,off.width,off.height);
+									if(i===(sonarType.length-1)){
+										heatmap.putImageData(image,0,0);
+									}
 									
 									return "translate("+[(p.x-d.getPointAtLength(0).x), (p.y - d.getPointAtLength(0).y)] + ")";
 								}
@@ -352,7 +361,12 @@ function transition() {
 											cy: p.y
 										});
 		})
-		.each("end",function(d,i){if(i===(sonarType.length-1)){finish()}});
+		.each("end",function(d,i){
+			if(i===(sonarType.length-1)){
+				heatmap.globalCompositeOperation = gCO;
+				finish()
+			}
+			});
 };
 
 function finish(){
@@ -367,7 +381,6 @@ function drawHeatMap(count){
 						 .domain([0,6])
 						 .range(scaleColors);
 	heatmap.clearRect(0,0,canvas.width,canvas.height);
-	heatmap2.clearRect(0,0,canvas2.width,canvas2.height);
 	var imageData = image.data;	//It's faster to work with a reference
 	//Array for percentage of coverage area
 	var percents = [0,0,0,0,0,0];
@@ -425,7 +438,7 @@ function drawHeatMap(count){
 	}
 	//console.log(percents);
 	image.data = imageData;
-	heatmap3.putImageData(image,0,0);
+	heatmap2.putImageData(image,0,0);
 	drawLegend(percents);
 
 };
@@ -447,7 +460,7 @@ function drawLegend(percents){
 			.attr("height", 15)
 			.attr("fill", function(d,i){return scaleColors[i]})
 			.attr("stroke","black")
-			.attr("stroke-width", 1);
+			.attr("stroke-width", 2);
 	
 	legendSvg.selectAll("text")
 		.data(percents)
@@ -464,6 +477,7 @@ function h2d(h) {return parseInt(h,16);};
 function drawInTime(start, end){
 	var count = 0;
 	clearAll();
+	ctx.fillStyle =  "rgba(1,0,0,1)";
 	d3.selectAll(".vehicle")
 			.data(d3.selectAll(".paths")[0])
 			.each(function(d,i){ 
@@ -477,7 +491,10 @@ function drawInTime(start, end){
 									}else{
 										p1 = d.getPointAtLength((time-.0001) * l);
 									}
+									ctx.clearRect(0,0,off.width,off.height);
 									drawSonar(p,p1,i);
+									var temp = ctx.getImageData(0,0,off.width,off.height);
+									scaleHeatMap(temp);	
 									count++;
 								}	
 								if(i===(sonarType.length-1)){
@@ -493,95 +510,59 @@ function drawInTime(start, end){
 };	
 
 function drawSonar(p,p1,num){
+	var heading = Math.atan2((p.y-p1.y),(p.x-p1.x));//heading in radians, 0 is 3 O'Clock
+	if(isNaN(heading)){//we are going vertically, i.e. p1.x == p.x
+		if(p.y>p1.y){
+			heading = Math.PI/2;
+		}else{
+			heading = -Math.PI/2;
+		}
+		console.log(heading);
+	}
+	//console.log(heading);
 	if(sonarType[num]==="fw"){
-		drawForwardSonar(p,p1,num);
+		drawForwardSonar(p,heading,num);
 	}else if(sonarType[num]==="ss"){
-		drawSideScanSonar(p,p1,num);
+		drawSideScanSonar(p,heading,num);
 	}else{
 		console.log("fail");
 	}
 };
-function drawForwardSonar(p,p1,num){	
-		heatmap.clearRect(0,0,canvas.width,canvas.height);
-		var heading = Math.atan2((p.y-p1.y),(p.x-p1.x));//heading in radians, 0 is 3 O'Clock
-		// console.log(Math.atan2((p.y-p1.y),(p.x-p1.x)));
-		// var heading = parseFloat(p.alpha);
-		if(isNaN(heading)){//we are going vertically, i.e. p1.x == p.x
-			if(p.y>p1.y){
-				heading = Math.PI/2;
-			}else{
-				heading = -Math.PI/2;
-			}
-			console.log(heading);
-		}
-		//console.log(heading);
-		var center = [p.x+sonarRange * Math.cos(heading), p.y+sonarRange * Math.sin(heading)];
-		//heatmap.globalCompositeOperation = "lighter";
-		heatmap.fillStyle =  "rgba(1,0,0,1)";
-		//heatmap.globalAlpha=.5;
-		heatmap.beginPath();		
-		heatmap.lineTo(center[0]+sonarRange*Math.cos(heading-sonarAngle),center[1]+sonarRange*Math.sin(heading-sonarAngle));
-		heatmap.moveTo(p.x,p.y);
-		heatmap.arc(center[0],center[1], sonarRange/2, heading-sonarAngle, heading+sonarAngle, false);
-		heatmap.fill();
-		heatmap.closePath();
-		
-		var temp = heatmap.getImageData(0,0,canvas.width,canvas.height);
-		scaleHeatMap(temp,num);				
+function drawForwardSonar(p,heading,num){		
+	var center = [p.x+sonarRange * Math.cos(heading), p.y+sonarRange * Math.sin(heading)];
+	ctx.beginPath();		
+	ctx.lineTo(center[0]+sonarRange*Math.cos(heading-sonarAngle),center[1]+sonarRange*Math.sin(heading-sonarAngle));
+	ctx.moveTo(p.x,p.y);
+	ctx.arc(center[0],center[1], sonarRange/2, heading-sonarAngle, heading+sonarAngle, false);
+	ctx.closePath();
+	ctx.fill();					
 };
 
-function drawSideScanSonar(p,p1,num){
-		heatmap.clearRect(0,0,canvas.width,canvas.height);
-		var heading = Math.atan2((p.y-p1.y),(p.x-p1.x));//heading in radians, 0 is 3 O'Clock
-		if(isNaN(heading)){//we are going vertically, i.e. p1.x == p.x
-			if(p.y>p1.y){
-				heading = Math.PI/2;
-			}else{
-				heading = -Math.PI/2;
-			}
-			console.log(heading);
-		}
-		//console.log(heading);
-		//heatmap.globalCompositeOperation = "lighter";
-		var perp = [heading+Math.PI/2, heading-Math.PI/2];
-		var center = [p.x+sonarRange * Math.cos(perp[0]), p.y+sonarRange * Math.sin(perp[0]),
-					p.x+sonarRange * Math.cos(perp[1]), p.y+sonarRange * Math.sin(perp[1])];
-		heatmap.fillStyle = "rgba(1,0,0,1)";
-		heatmap.beginPath();		
-		heatmap.lineTo(center[0]+sonarRange*Math.cos(perp[0]-sonarAngle),center[1]+sonarRange*Math.sin(perp[0]-sonarAngle));
-		heatmap.moveTo(p.x,p.y);
-		heatmap.arc(center[0],center[1], sonarRange/2, perp[0]-sonarAngle, perp[0]+sonarAngle, false);
-		heatmap.moveTo(p.x,p.y);
-		heatmap.lineTo(center[2]+sonarRange*Math.cos(perp[1]-sonarAngle),center[3]+sonarRange*Math.sin(perp[1]-sonarAngle));
-		heatmap.moveTo(p.x,p.y);
-		heatmap.arc(center[2],center[3], sonarRange/2, perp[1]-sonarAngle, perp[1]+sonarAngle, false);
-		heatmap.fill();
-		heatmap.closePath();	
-		//heatmap2.stroke();		
-		var temp = heatmap.getImageData(0,0,canvas.width,canvas.height);
-		scaleHeatMap(temp,num);		
+function drawSideScanSonar(p,heading,num){
+	var perp = [heading+Math.PI/2, heading-Math.PI/2];
+	var center = [p.x+sonarRange * Math.cos(perp[0]), p.y+sonarRange * Math.sin(perp[0]),
+				p.x+sonarRange * Math.cos(perp[1]), p.y+sonarRange * Math.sin(perp[1])];
+	ctx.beginPath();		
+	ctx.lineTo(center[0]+sonarRange*Math.cos(perp[0]-sonarAngle),center[1]+sonarRange*Math.sin(perp[0]-sonarAngle));
+	ctx.moveTo(p.x,p.y);
+	ctx.arc(center[0],center[1], sonarRange/2, perp[0]-sonarAngle, perp[0]+sonarAngle, false);
+	ctx.moveTo(p.x,p.y);
+	ctx.lineTo(center[2]+sonarRange*Math.cos(perp[1]-sonarAngle),center[3]+sonarRange*Math.sin(perp[1]-sonarAngle));
+	ctx.moveTo(p.x,p.y);
+	ctx.arc(center[2],center[3], sonarRange/2, perp[1]-sonarAngle, perp[1]+sonarAngle, false);
+	ctx.closePath();
+	ctx.fill();		
 };
 
-function scaleHeatMap(temp,num){
+function scaleHeatMap(temp){
 	var imageData = image.data, tempData = temp.data;
 	for (var i=0;i<imageData.length;i+=4){
 		if(tempData[i]!=0){
-			imageData[i] = imageData[i] + 1;
+			imageData[i] = imageData[i] + tempData[i];
+			imageData[i+1] = imageData[i+1] + tempData[i+1];
+			imageData[i+2] = imageData[i+2] + tempData[i+2];			
+			imageData[i+3] = 200;
 		}
 	}
 	image.data = imageData;
-};
-function greyscale(){
-	  var d = image.data;
-	  for (var i=0; i<d.length; i+=4) {
-		var r = d[i];
-		var g = d[i+1];
-		var b = d[i+2];
-		// CIE luminance for the RGB
-		// The human eye is bad at seeing red and blue, so we de-emphasize them.
-		var v = 0.2126*r + 0.7152*g + 0.0722*b;
-		d[i] = d[i+1] = d[i+2] = v
-	  }
-	image.data = d;
-	heatmap3.putImageData(image,0,0);
 };

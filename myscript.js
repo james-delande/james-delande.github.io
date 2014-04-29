@@ -13,8 +13,9 @@ var timeScale = d3.scale.linear()
 				.domain([0, 100])
 				.range([0, 1]);
 				
-var scaleColors = ["#FFFFFF","#0000FF","#FFFF00","#00FF00","#FF9900","#FF0000"];
-
+var scaleColors = brightScaleColors = ["#FFFFFF","#0000FF","#FFFF00","#00FF00","#FF9900","#FF0000"];
+var greyScaleColors = ["#FFFFFF","#D0D0D0","#A0A0A0","#787878","#505050","#000000"];
+var greyscale = false;
 var svgContainer = d3.select("body")
 			.append("svg")
 			.attr("width",w)
@@ -377,6 +378,11 @@ function finish(){
 };
 
 function drawHeatMap(count){
+	if(greyscale){
+		scaleColors = greyScaleColors;
+	}else{
+		scaleColors = brightScaleColors;
+	}
 	var colorScale = d3.scale.quantize()
 						 .domain([0,6])
 						 .range(scaleColors);
@@ -459,7 +465,13 @@ function drawLegend(percents){
 			.attr("width", 15)
 			.attr("height", 15)
 			.attr("fill", function(d,i){return scaleColors[i]})
-			.attr("stroke","black")
+			.attr("stroke",function(d,i){
+					if(greyscale){
+						return scaleColors[(i+5)%6];
+					}else{
+						return "black";
+					}
+				})
 			.attr("stroke-width", 2);
 	
 	legendSvg.selectAll("text")
@@ -561,8 +573,12 @@ function scaleHeatMap(temp){
 			imageData[i] = imageData[i] + tempData[i];
 			imageData[i+1] = imageData[i+1] + tempData[i+1];
 			imageData[i+2] = imageData[i+2] + tempData[i+2];			
-			imageData[i+3] = 200;
+			imageData[i+3] = 255;
 		}
 	}
 	image.data = imageData;
 };
+
+function toggle() {
+	greyscale = !greyscale;
+}

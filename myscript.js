@@ -201,16 +201,15 @@ var rotatePaths = d3.behavior.drag()
 		if(deg > 360){
 			deg = deg - 360;
 		}
-		//Update the rotation handle
-		d3.select(this).attr("cx",dx).attr("cy",dy);
-		//Update the rotation handle line
-		d3.selectAll(".hinge"+num).attr("d","M"+[(rectx),(recty)]+"L"+[dx,dy]);
+
 		//Update the path
 		temp = deg;
 		deg = deg- prev[num]; //Change deg to only be the offset in rotation
 		prev[num] = temp; //Set the new previous rotation
-		//Update the points, this currently breaks dragging
 		getRotatedPoints(num,deg,dist);
+		d3.select(".center"+num).remove();
+		d3.selectAll(".rotate"+num).remove();
+		drawBox(num);
 	}
 });						
 svgContainer.selectAll(".rotate").data(lineData).enter().append("g")

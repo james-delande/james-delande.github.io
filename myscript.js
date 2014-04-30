@@ -6,7 +6,7 @@ var xscale = d3.scale.linear()
 					 .range([0,w]);
 					 
 var yscale = d3.scale.linear()
-					 .domain([2500,-500])
+					 .domain([3000,-500])
 					 .range([0,h]);
 					 					 
 var timeScale = d3.scale.linear()
@@ -38,7 +38,7 @@ off.height = h;
 var ctx = off.getContext('2d');
  
 
-var sonarRange = 100, sonarAngle = Math.PI/4, draggable = true;
+var sonarRange = xscale(750) - xscale(0), sonarAngle = Math.PI/4, draggable = true;
 
 var lineData = new Array();
 	lineData.push([{ "x": 100,   "y": -100},  { "x": 300,  "y": -100},

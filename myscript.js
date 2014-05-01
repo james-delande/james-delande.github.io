@@ -12,15 +12,49 @@ var yscale = d3.scale.linear()
 var timeScale = d3.scale.linear()
 				.domain([0, 100])
 				.range([0, 1]);
+
 				
 var scaleColors = brightScaleColors = ["#FFFFFF","#0000FF","#FFFF00","#00FF00","#FF9900","#FF0000"];
 var greyScaleColors = ["#FFFFFF","#D0D0D0","#A0A0A0","#787878","#505050","#000000"];
 var greyscale = false;
 var svgContainer = d3.select("body")
 			.append("svg")
+			.attr("class", "svgContainer")
 			.attr("width",w)
 			.attr("height",h);
+
+var xAxisSvg = d3.select("body")
+			.append("svg")
+			.attr("width", w+50)
+			.attr("height",30)
+			.attr("class","xaxis");
 			
+xAxisSvg.append("g")
+	.attr("transform","translate(25,5)")
+	.call(d3.svg.axis()
+		.scale(xscale)
+		.orient("top")
+		.tickFormat(function(d) { return d; })
+		.tickPadding(0))
+    .selectAll("text")
+		.attr("transform", "translate(0,25)");
+	  
+var yAxisSvg = d3.select("body")
+			.append("svg")
+			.attr("width", 50)
+			.attr("height",h+50)
+			.attr("class","yaxis");
+
+yAxisSvg.append("g")
+	.attr("transform", "translate(45,25)")
+	.call(d3.svg.axis()
+	  .scale(yscale)	  
+	  .orient("right")
+	  .tickFormat(function(d) { return d; })
+	  .tickPadding(0))
+	.selectAll("text")
+		.attr("transform", "translate(-40,0)");
+	  
 d3.selectAll("canvas")
     .attr("width", w)
     .attr("height", h);
@@ -73,6 +107,7 @@ var sonarType = new Array();
 	sonarType.push("ss");
 	sonarType.push("fw");
 	sonarType.push("ss");	
+	
 function updateVehicle(num){
 		var path = d3.selectAll(".path"+num)[0][0];
 		var l = path.getTotalLength();
@@ -215,7 +250,7 @@ var rotatePaths = d3.behavior.drag()
 	}
 });						
 svgContainer.selectAll(".rotate").data(lineData).enter().append("g")
-						.attr("class", function(d,i){return "group"+i})
+						.attr("class", function(d,i){return "move group"+i})
 						.each(function(d,i){
 							drawBox(i);
 							d3.select(this).selectAll(".point").data(d).enter()

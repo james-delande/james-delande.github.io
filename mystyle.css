@@ -1,4 +1,4 @@
-svg, canvas {	
+.svgContainer, canvas {	
 	position: absolute;
 	top: 50;
 	left: 50;
@@ -11,8 +11,30 @@ body{
 canvas{
 	background-color: transparent;
 	}
-g{
+.move{
 	cursor:move
+}
+.xaxis {
+	position: absolute;
+	top: 545;
+	left: 25;
+}
+.xaxis path,
+.xaxis line {
+	fill: none;
+	stroke: black;
+	shape-rendering: crispEdges;
+}
+.yaxis {
+	position: absolute;
+	top: 25;
+	left: 5;
+}
+.yaxis path,
+.yaxis line {
+	fill: none;
+	stroke: black;
+	shape-rendering: crispEdges;
 }
 /* Legend CSS */
 .legendSVG {
@@ -46,7 +68,7 @@ g{
 
 .sliderSVG {
 	position: absolute;
-	top: 550;
+	top: 575;
 	left: 50;
 } 
 

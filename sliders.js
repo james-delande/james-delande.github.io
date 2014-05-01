@@ -18,7 +18,7 @@ function singleSlider(loc){
 		.attr("width", width)
 		.attr("height", height)
 		.attr("class", "sliderSVG slider")
-		.on("dblclick",function(d){doubleSlider(brush.extent()[0]);this.remove(); });
+		.on("dblclick",function(d){doubleSlider(brush.extent()[0]);this.remove(); drawOverlap();});
 
 	sliderSvg.append("g")
 		.attr("class", "x axis slider")
@@ -38,11 +38,14 @@ function singleSlider(loc){
 		.attr("class", "slider")
 		.call(brush);
 		
-	var handle = brushg.append("circle")
+	var handle = brushg.append("rect")
 		.attr("class", "handle")
-		.attr("transform", "translate(0," + height / 2 + ")")
-		.attr("r", 9)
-		.attr("cx",xSliderScale(loc));
+		.attr("x",xSliderScale(loc))
+		.attr("y", 5)
+		.attr("width", 5)
+		.attr("height",78)
+		.attr("stroke","black")
+		.attr("fill","transparent");
 		
 	brushg.selectAll(".extent,.resize")
 		.remove();	
@@ -53,7 +56,7 @@ function singleSlider(loc){
 			value = xSliderScale.invert(d3.mouse(this)[0]);
 			brush.extent([value, value]);
 		}
-		handle.attr("cx", xSliderScale(value));
+		handle.attr("x", xSliderScale(value));
 		drawInTime(value,value);
 	}	
 };
@@ -75,7 +78,7 @@ function doubleSlider(loc){
 		.attr("width", width)
 		.attr("height", height)
 		.attr("class", "sliderSVG slider")
-		.on("dblclick",function(d){singleSlider(brush.extent()[0]);this.remove(); });
+		.on("dblclick",function(d){singleSlider(brush.extent()[0]);this.remove(); drawOverlap();});
 
 	sliderSvg.append("g")
 		.attr("class", "x axis")

@@ -118,7 +118,7 @@ function updateVehicle(num){
 		var l = path.getTotalLength();
 		var x;
 		if(d3.select(".handle")[0][0] != null){
-			x = d3.select(".handle").attr("cx");
+			x = d3.select(".handle").attr("x");
 		}else{
 			x = d3.select(".extent").attr("x");
 		}
@@ -232,7 +232,7 @@ svgContainer.append("linearGradient")
 svgContainer.selectAll(".vehicle").data(d3.selectAll(".paths")[0]).enter().append("circle")
 						.each(function (d,i){
 							var l = d.getTotalLength();
-							var time = xSliderScale.invert(d3.select(".handle").attr("cx"))/100;
+							var time = xSliderScale.invert(d3.select(".handle").attr("x"))/100;
 							var p = d.getPointAtLength(time * l);
 							d3.select(this).attr({
 								class: "UUV"+i+" vehicle",
@@ -395,7 +395,7 @@ function clearAll(){
 function transition() {
 	document.getElementById("transition").disabled = true;
 	if(d3.select(".handle")[0][0] != null){
-		d3.select(".handle").attr("cx",xSliderScale(0));
+		d3.select(".handle").attr("x",xSliderScale(0));
 	}else{
 		singleSlider(0);
 		d3.select(".sliderSVG").remove();
@@ -423,7 +423,7 @@ function transition() {
 									}else{
 										p1 = d.getPointAtLength((t-.0001) * l);
 									}
-									d3.select(".handle").attr("cx",xSliderScale(t*100));
+									d3.select(".handle").attr("x",xSliderScale(t*100));
 									ctx.clearRect(0,0,off.width,off.height);
 									drawSonar(p,p1,i);									
 									var temp = ctx.getImageData(0,0,off.width,off.height);
@@ -448,14 +448,22 @@ function transition() {
 		.each("end",function(d,i){
 			if(i===(sonarType.length-1)){
 				heatmap.globalCompositeOperation = gCO;
-				d3.select(".sliderSVG").append("path")
-					.attr("d",overlap(overlapData))
-					.attr("class", greyscale ? "greyLine" : "brightLine");
+				drawOverlap();
 				finish();
 			}
 			});
 };
-
+function drawOverlap(){
+	if(d3.select(".overlapLine")[0] != null){
+		d3.select(".overlapLine").remove();
+	}
+	d3.select(".sliderSVG").append("path")
+		.attr("d",overlap(overlapData))
+		.attr("class", function() {
+				var scale = greyscale ? "greyLine " : "brightLine ";
+				return "overlapLine " + scale;
+				});
+};
 function finish(){
 		drawHeatMap(7);
 		document.getElementById("transition").disabled = false;
@@ -485,7 +493,7 @@ function drawHeatMap(count){
 	//Array for percentage of coverage area
 	var percents = [0,0,0,0,0,0];
 	var max= getMax(imageData);
-	console.log(max);
+	//console.log(max);
 	if(max < 6){
 		max = 6;
 	}

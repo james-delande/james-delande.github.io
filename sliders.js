@@ -17,39 +17,35 @@ function singleSlider(loc){
 	var sliderSvg = d3.select("body").append("svg")
 		.attr("width", width)
 		.attr("height", height)
-		.attr("class", "sliderSVG slider")	
-		.on("dblclick",function(d){ doubleSlider(brush.extent()[0]);this.remove();});
+		.attr("class", "sliderSVG slider")
+		.on("dblclick",function(d){doubleSlider(brush.extent()[0]);this.remove(); });
 
 	sliderSvg.append("g")
 		.attr("class", "x axis slider")
-		.attr("transform", "translate(0," + height / 2 + ")")
+		.attr("transform", "translate(0," + (height-15) + ")")
+		.attr("y",height)
 		.call(d3.svg.axis()
 		  .scale(xSliderScale)
 		  .orient("bottom")
 		  .tickFormat(function(d) { return d + "%"; })
-		  .tickSize(0)
-		  .tickPadding(12))
+		  .tickSize(-height +20)
+		  .tickPadding(8))
 	  .select(".domain")
 	  .select(function() { return this.parentNode.appendChild(this.cloneNode(true)); })
 		.attr("class", "halo");
 
-	var slider = sliderSvg.append("g")
+	var brushg = sliderSvg.append("g")
 		.attr("class", "slider")
 		.call(brush);
-
-	slider.selectAll(".extent,.resize")
-		.remove();
-
-	slider.select(".background")
-		.attr("height", height)
-		.attr("x",25);
 		
-	var handle = slider.append("circle")
+	var handle = brushg.append("circle")
 		.attr("class", "handle")
 		.attr("transform", "translate(0," + height / 2 + ")")
 		.attr("r", 9)
 		.attr("cx",xSliderScale(loc));
 		
+	brushg.selectAll(".extent,.resize")
+		.remove();	
 	function brushed() {
 		var value = brush.extent()[0];
 		//console.log(d3.event.sourceEvent);
@@ -68,8 +64,6 @@ function doubleSlider(loc){
 	var brush = d3.svg.brush()
 		.x(xSliderScale)
 		.extent([loc, loc+10])
-		.on("brushstart", brushstart)
-		.on("brush", brushmove)
 		.on("brushend", brushend);
 
 	var arc = d3.svg.arc()
@@ -81,7 +75,7 @@ function doubleSlider(loc){
 		.attr("width", width)
 		.attr("height", height)
 		.attr("class", "sliderSVG slider")
-		.on("dblclick",function(d){singleSlider(brush.extent()[0]);this.remove(); });;
+		.on("dblclick",function(d){singleSlider(brush.extent()[0]);this.remove(); });
 
 	sliderSvg.append("g")
 		.attr("class", "x axis")
@@ -108,18 +102,7 @@ function doubleSlider(loc){
 
 	brushg.selectAll("rect")
 		.attr("height", height-20);
-		
-	brushstart();
-	brushmove();
-	
-	function brushstart() {
-	
-	};
 
-	function brushmove() {
-
-	  //circle.classed("selected", function(d) { return s[0] <= d && d <= s[1]; });  
-	};
 
 	function brushend() {
 		var s = brush.extent();

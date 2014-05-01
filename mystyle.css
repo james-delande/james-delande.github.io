@@ -55,14 +55,14 @@ canvas{
   fill: none;
   stroke: #000;
   stroke-opacity: .3;
-  stroke-width: 10px;
+  stroke-width: 5px;
   stroke-linecap: round;
 }
 
 .axis .halo {
   fill: none;
   stroke: #ddd;
-  stroke-width: 8px;
+  stroke-width: 3px;
   stroke-linecap: round;
 }
 
@@ -90,3 +90,13 @@ canvas{
   shape-rendering: crispEdges;
 }
 
+.brightLine {                         
+    fill: none;                 
+    stroke: url(#bright-gradient);    
+    stroke-width: 2px;          
+}
+.greyLine {                         
+    fill: none;                 
+    stroke: url(#grey-gradient);    
+    stroke-width: 2px;          
+}

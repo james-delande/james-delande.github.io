@@ -64,6 +64,7 @@ heatmap = canvas.getContext('2d');
 
 var canvas2 = document.getElementById('heatmap2');
 heatmap2 = canvas2.getContext('2d');
+var groupImage = heatmap2.createImageData(canvas2.width,canvas2.height);
 var image = heatmap2.createImageData(canvas2.width,canvas2.height);
 //create off screen canvas
 var off = document.createElement('canvas');
@@ -73,7 +74,7 @@ var ctx = off.getContext('2d');
  
 
 var sonarRange = xscale(750) - xscale(0), sonarAngle = Math.PI/4, draggable = true;
-
+var overlapData = new Array();
 var lineData = new Array();
 	lineData.push([{ "x": 100,   "y": -100},  { "x": 300,  "y": -100},
                  { "x": 100,  "y": 100}, { "x": 300,  "y": 100}]);
@@ -92,6 +93,10 @@ var lineFunction = d3.svg.line()
                          .x(function(d) { return xscale(d.x); })
                          .y(function(d) { return yscale(d.y); })
                          .interpolate("cardinal-closed");
+
+var overlap = d3.svg.line()
+			.x(function(d) { return xSliderScale(d.t); })
+			.y(function(d) { return 100 - timeScale.invert(d.max/6);});
 
 var colors = new Array();
 	colors.push(d3.rgb("red"));
@@ -190,7 +195,40 @@ svgContainer.selectAll(".path").data(lineData).enter().append("path")
 						.attr("stroke", function(d,i){return colors[i]})
 						.attr("stroke-width", 2)
 						.attr("fill", "none");
-												
+
+svgContainer.append("linearGradient")                
+        .attr("id", "bright-gradient")            
+        .attr("gradientUnits", "userSpaceOnUse")    
+        .attr("x1", 0).attr("y1", 100)         
+        .attr("x2", 0).attr("y2", 0)      
+    .selectAll("stop")                      
+        .data([                             
+            {offset: "0%", color: "#0000FF"},       
+            {offset: "25%", color: "#FFFF00"},  
+            {offset: "50%", color: "#00FF00"},        
+            {offset: "75%", color: "#FF9900"},        
+            {offset: "100%", color: "#FF0000"}   
+        ])                  
+    .enter().append("stop")         
+        .attr("offset", function(d) { return d.offset; })   
+        .attr("stop-color", function(d) { return d.color; });
+		
+svgContainer.append("linearGradient")                
+        .attr("id", "grey-gradient")            
+        .attr("gradientUnits", "userSpaceOnUse")    
+        .attr("x1", 0).attr("y1", 100)         
+        .attr("x2", 0).attr("y2", 0)      
+    .selectAll("stop")                      
+        .data([                             
+            {offset: "0%", color: "#D0D0D0"},       
+            {offset: "25%", color: "#A0A0A0"},  
+            {offset: "50%", color: "#787878"},        
+            {offset: "75%", color: "#505050"},        
+            {offset: "100%", color: "#000000"}   
+        ])                  
+    .enter().append("stop")         
+        .attr("offset", function(d) { return d.offset; })   
+        .attr("stop-color", function(d) { return d.color; });
 svgContainer.selectAll(".vehicle").data(d3.selectAll(".paths")[0]).enter().append("circle")
 						.each(function (d,i){
 							var l = d.getTotalLength();
@@ -356,12 +394,21 @@ function clearAll(){
 };
 function transition() {
 	document.getElementById("transition").disabled = true;
+	if(d3.select(".handle")[0][0] != null){
+		d3.select(".handle").attr("cx",xSliderScale(0));
+	}else{
+		singleSlider(0);
+		d3.select(".sliderSVG").remove();
+	}
 	d3.selectAll(".slider").style("pointer-events","none");
 	clearAll();
 	draggable = false; //Don't allow path dragging during transition
 	var gCO = ctx.globalCompositeOperation;
 	ctx.globalCompositeOperation = "lighter";
 	ctx.fillStyle = "rgba(1,1,1,1)";
+	
+
+	//var time = xSliderScale.invert(x)/100;
 	d3.selectAll(".vehicle")
 		.data(d3.selectAll(".paths")[0])
 		.transition()
@@ -376,13 +423,14 @@ function transition() {
 									}else{
 										p1 = d.getPointAtLength((t-.0001) * l);
 									}
-			
-									drawSonar(p,p1,i);
-
+									d3.select(".handle").attr("cx",xSliderScale(t*100));
+									ctx.clearRect(0,0,off.width,off.height);
+									drawSonar(p,p1,i);									
 									var temp = ctx.getImageData(0,0,off.width,off.height);
 									scaleHeatMap(temp);
-									ctx.clearRect(0,0,off.width,off.height);
 									if(i===(sonarType.length-1)){
+										overlapData.push({"t" : t*100, "max":getMax(groupImage.data)});
+										groupImage = heatmap2.createImageData(canvas2.width,canvas2.height);
 										heatmap.putImageData(image,0,0);
 									}
 									
@@ -400,7 +448,10 @@ function transition() {
 		.each("end",function(d,i){
 			if(i===(sonarType.length-1)){
 				heatmap.globalCompositeOperation = gCO;
-				finish()
+				d3.select(".sliderSVG").append("path")
+					.attr("d",overlap(overlapData))
+					.attr("class", greyscale ? "greyLine" : "brightLine");
+				finish();
 			}
 			});
 };
@@ -411,7 +462,15 @@ function finish(){
 		d3.selectAll(".slider").style("pointer-events","auto");
 		draggable = true;//Now we can allow dragging again
 };
-
+function getMax(imageData){
+	var max= 0;	
+	for (var i=0;i<imageData.length;i+=4){		
+		if(imageData[i]>max){
+			max = imageData[i];
+		}
+	}
+	return max;
+}
 function drawHeatMap(count){
 	if(greyscale){
 		scaleColors = greyScaleColors;
@@ -425,18 +484,10 @@ function drawHeatMap(count){
 	var imageData = image.data;	//It's faster to work with a reference
 	//Array for percentage of coverage area
 	var percents = [0,0,0,0,0,0];
-	var max= 0,	min= 255;	
-	for (var i=0;i<imageData.length;i+=4){		
-		if(imageData[i]>max){
-			max = imageData[i];
-		}
-		if(imageData[i]<min){
-			min = imageData[i];
-		}		
-	}
-	//console.log(min, max);
-	if(count <= 6){
-		max = count;
+	var max= getMax(imageData);
+	console.log(max);
+	if(max < 6){
+		max = 6;
 	}
 	for (var i=0;i<imageData.length;i+=4){
 		var col = colorScale(Math.ceil((imageData[i]/max)*6));
@@ -602,15 +653,17 @@ function drawSideScanSonar(p,heading,num){
 };
 
 function scaleHeatMap(temp){
-	var imageData = image.data, tempData = temp.data;
+	var imageData = image.data, tempData = temp.data, groupData = groupImage.data;
 	for (var i=0;i<imageData.length;i+=4){
 		if(tempData[i]!=0){
-			imageData[i] = imageData[i] + tempData[i];
-			imageData[i+1] = imageData[i+1] + tempData[i+1];
-			imageData[i+2] = imageData[i+2] + tempData[i+2];			
+			imageData[i] = imageData[i] + 1;
+			imageData[i+1] = imageData[i+1] + 1;
+			imageData[i+2] = imageData[i+2] + 1;			
 			imageData[i+3] = 255;
+			groupData[i] = groupData[i] + 1;
 		}
 	}
+	groupImage.data = groupData;
 	image.data = imageData;
 };
 

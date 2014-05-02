@@ -35,7 +35,7 @@ function singleSlider(loc){
 		.attr("class", "halo");
 
 	var brushg = sliderSvg.append("g")
-		.attr("class", "slider")
+		.attr("class", "brush slider")
 		.call(brush);
 		
 	var handle = brushg.append("rect")
@@ -46,6 +46,9 @@ function singleSlider(loc){
 		.attr("height",78)
 		.attr("stroke","black")
 		.attr("fill","transparent");
+
+	brushg.selectAll("rect")
+		.attr("height", height-20);	
 		
 	brushg.selectAll(".extent,.resize")
 		.remove();	

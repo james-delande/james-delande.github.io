@@ -389,8 +389,10 @@ function getRotatedPoints(num,deg,scale){
 function clearAll(){
 	heatmap.clearRect(0,0,canvas.width,canvas.height);
 	heatmap2.clearRect(0,0,canvas2.width,canvas2.height);
-	image = heatmap2.createImageData(canvas2.width,canvas2.height);
+	ctx.clearRect(0,0,off.width,off.height);
+	image = heatmap2.createImageData(canvas.width,canvas.height);
 	d3.select(".legendSVG").remove();
+	overlapData = new Array();
 };
 function transition() {
 	document.getElementById("transition").disabled = true;
@@ -406,37 +408,36 @@ function transition() {
 	var gCO = ctx.globalCompositeOperation;
 	ctx.globalCompositeOperation = "lighter";
 	ctx.fillStyle = "rgba(1,1,1,1)";
-	
-
-	//var time = xSliderScale.invert(x)/100;
+	heatmap.globalCompositeOperation = "lighter";
 	d3.selectAll(".vehicle")
 		.data(d3.selectAll(".paths")[0])
 		.transition()
 		.duration(10000)
 		.ease("linear")
 		.attrTween("transform", function(d,i){ // Returns an attrTween for translating along the specified path element.
-								var l = d.getTotalLength();
-								return function(t) {									
-									var p = d.getPointAtLength(t * l),p1;
-									if(t-.0001 < 0){
-										p1 = d.getPointAtLength(0);
-									}else{
-										p1 = d.getPointAtLength((t-.0001) * l);
-									}
-									d3.select(".handle").attr("x",xSliderScale(t*100));
-									ctx.clearRect(0,0,off.width,off.height);
-									drawSonar(p,p1,i);									
-									var temp = ctx.getImageData(0,0,off.width,off.height);
-									scaleHeatMap(temp);
-									if(i===(sonarType.length-1)){
-										overlapData.push({"t" : t*100, "max":getMax(groupImage.data)});
-										groupImage = heatmap2.createImageData(canvas2.width,canvas2.height);
-										heatmap.putImageData(image,0,0);
-									}
-									
-									return "translate("+[(p.x-d.getPointAtLength(0).x), (p.y - d.getPointAtLength(0).y)] + ")";
-								}
-							})
+						var l = d.getTotalLength();
+						return function(t) {									
+							var p = d.getPointAtLength(t * l),p1;
+							if(t-.0001 < 0){
+								p1 = d.getPointAtLength(0);
+							}else{
+								p1 = d.getPointAtLength((t-.0001) * l);
+							}
+							d3.select(".handle").attr("x",xSliderScale(t*100));
+							
+							drawSonar(p,p1,i);
+							if(i===(sonarType.length-1)){
+								var temp = ctx.getImageData(0,0,off.width,off.height);
+								overlapData.push({"t" : t*100, "max":getMax(temp.data)});
+								drawOverlap();
+								scaleHeatMap(temp);
+								heatmap.putImageData(temp,0,0);
+								ctx.clearRect(0,0,off.width,off.height);
+							}
+							
+							return "translate("+[(p.x-d.getPointAtLength(0).x), (p.y - d.getPointAtLength(0).y)] + ")";
+						}
+					})
 		.each("start",function(d,i){
 					//console.log(d);
 					var p = d.getPointAtLength(0);
@@ -447,8 +448,7 @@ function transition() {
 		})
 		.each("end",function(d,i){
 			if(i===(sonarType.length-1)){
-				heatmap.globalCompositeOperation = gCO;
-				drawOverlap();
+				heatmap.globalCompositeOperation = gCO;				
 				finish();
 			}
 			});
@@ -583,7 +583,8 @@ function h2d(h) {return parseInt(h,16);};
 function drawInTime(start, end){
 	var count = 0;
 	clearAll();
-	ctx.fillStyle =  "rgba(1,0,0,1)";
+	ctx.fillStyle =  "rgba(1,1,1,1)";
+	ctx.globalCompositeOperation = "lighter";
 	d3.selectAll(".vehicle")
 			.data(d3.selectAll(".paths")[0])
 			.each(function(d,i){ 
@@ -597,11 +598,16 @@ function drawInTime(start, end){
 									}else{
 										p1 = d.getPointAtLength((time-.0001) * l);
 									}
-									ctx.clearRect(0,0,off.width,off.height);
+
+									
 									drawSonar(p,p1,i);
-									var temp = ctx.getImageData(0,0,off.width,off.height);
-									scaleHeatMap(temp);	
+	
 									count++;
+									
+									var temp = ctx.getImageData(0,0,off.width,off.height);
+									scaleHeatMap(temp);									
+									ctx.clearRect(0,0,off.width,off.height);
+																	
 								}	
 								if(i===(sonarType.length-1)){
 										drawHeatMap(count)
@@ -661,17 +667,15 @@ function drawSideScanSonar(p,heading,num){
 };
 
 function scaleHeatMap(temp){
-	var imageData = image.data, tempData = temp.data, groupData = groupImage.data;
+	var imageData = image.data, tempData = temp.data;
 	for (var i=0;i<imageData.length;i+=4){
 		if(tempData[i]!=0){
 			imageData[i] = imageData[i] + 1;
 			imageData[i+1] = imageData[i+1] + 1;
 			imageData[i+2] = imageData[i+2] + 1;			
 			imageData[i+3] = 255;
-			groupData[i] = groupData[i] + 1;
 		}
 	}
-	groupImage.data = groupData;
 	image.data = imageData;
 };
 

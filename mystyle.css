@@ -89,7 +89,9 @@ canvas{
   fill-opacity: .125;
   shape-rendering: crispEdges;
 }
-
+.handle {
+	cursor: ew-resize;
+}
 .brightLine {                         
     fill: none;                 
     stroke: url(#bright-gradient);    

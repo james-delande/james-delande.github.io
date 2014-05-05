@@ -40,6 +40,7 @@ function singleSlider(loc){
 		
 	var handle = brushg.append("rect")
 		.attr("class", "handle")
+		.attr("transform", "translate(-2.5,0)")
 		.attr("x",xSliderScale(loc))
 		.attr("y", 5)
 		.attr("width", 5)

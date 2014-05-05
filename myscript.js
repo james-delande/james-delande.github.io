@@ -71,7 +71,7 @@ var off = document.createElement('canvas');
 off.width = w;
 off.height = h;
 var ctx = off.getContext('2d');
- 
+ctx.webkitImageSmoothingEnabled=false;
 
 var sonarRange = xscale(750) - xscale(0), sonarAngle = Math.PI/4, draggable = true;
 var overlapData = new Array();
@@ -96,7 +96,7 @@ var lineFunction = d3.svg.line()
 
 var overlap = d3.svg.line()
 			.x(function(d) { return xSliderScale(d.t); })
-			.y(function(d) { return 100 - timeScale.invert(d.max/6);});
+			.y(function(d) { return 100 - timeScale.invert((d.max)/5);});
 
 var colors = new Array();
 	colors.push(d3.rgb("red"));
@@ -203,10 +203,14 @@ svgContainer.append("linearGradient")
         .attr("x2", 0).attr("y2", 0)      
     .selectAll("stop")                      
         .data([                             
-            {offset: "0%", color: "#0000FF"},       
-            {offset: "25%", color: "#FFFF00"},  
-            {offset: "50%", color: "#00FF00"},        
-            {offset: "75%", color: "#FF9900"},        
+            {offset: "0%", color: "#0000FF"},
+			{offset: "25%", color: "#0000FF"},			
+            {offset: "26%", color: "#FFFF00"},  
+			{offset: "50%", color: "#FFFF00"},
+            {offset: "51%", color: "#00FF00"},   
+			{offset: "75%", color: "#00FF00"}, 
+            {offset: "76%", color: "#FF9900"},
+			{offset: "95%", color: "#FF9900"},
             {offset: "100%", color: "#FF0000"}   
         ])                  
     .enter().append("stop")         
@@ -229,6 +233,7 @@ svgContainer.append("linearGradient")
     .enter().append("stop")         
         .attr("offset", function(d) { return d.offset; })   
         .attr("stop-color", function(d) { return d.color; });
+		
 svgContainer.selectAll(".vehicle").data(d3.selectAll(".paths")[0]).enter().append("circle")
 						.each(function (d,i){
 							var l = d.getTotalLength();
@@ -424,7 +429,6 @@ function transition() {
 								p1 = d.getPointAtLength((t-.0001) * l);
 							}
 							d3.select(".handle").attr("x",xSliderScale(t*100));
-							
 							drawSonar(p,p1,i);
 							if(i===(sonarType.length-1)){
 								var temp = ctx.getImageData(0,0,off.width,off.height);
@@ -448,7 +452,7 @@ function transition() {
 		})
 		.each("end",function(d,i){
 			if(i===(sonarType.length-1)){
-				heatmap.globalCompositeOperation = gCO;				
+				heatmap.globalCompositeOperation = gCO;	
 				finish();
 			}
 			});
@@ -471,11 +475,17 @@ function finish(){
 		draggable = true;//Now we can allow dragging again
 };
 function getMax(imageData){
-	var max= 0;	
+	var max= 0, count = 0;	
 	for (var i=0;i<imageData.length;i+=4){		
 		if(imageData[i]>max){
 			max = imageData[i];
+			count = 1;
+		}else if(max === imageData[i]){
+			count++;
 		}
+	}
+	if(count < 1000){
+		max-=1;
 	}
 	return max;
 }
@@ -597,9 +607,7 @@ function drawInTime(start, end){
 										p1 = d.getPointAtLength(0);
 									}else{
 										p1 = d.getPointAtLength((time-.0001) * l);
-									}
-
-									
+									}									
 									drawSonar(p,p1,i);
 	
 									count++;

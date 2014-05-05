@@ -102,3 +102,9 @@ canvas{
     stroke: url(#grey-gradient);    
     stroke-width: 2px;          
 }
+
+.networkSVG{
+	position: absolute;
+	top: 700;
+	left: 200;
+} 

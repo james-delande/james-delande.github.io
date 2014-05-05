@@ -87,7 +87,9 @@ var lineData = new Array();
 	lineData.push([{ "x": 100,   "y": 1000},  { "x": 300,  "y": 1000},
                  { "x": 100,  "y": 1200}, { "x": 300,  "y": 1200}]);	
 	lineData.push([{ "x": -600,   "y": 1000},  { "x": -400,  "y": 1000},
-                 { "x": -600,  "y": 1200}, { "x": -400,  "y": 1200}]);				 
+                 { "x": -600,  "y": 1200}, { "x": -400,  "y": 1200}]);
+
+
 //Create the path line
 var lineFunction = d3.svg.line()
                          .x(function(d) { return xscale(d.x); })
@@ -105,6 +107,7 @@ var colors = new Array();
 	colors.push(d3.rgb("cyan"));
 	colors.push(d3.rgb("magenta"));
 	colors.push(d3.rgb("orange"));
+	
 var sonarType = new Array();
 	sonarType.push("fw");
 	sonarType.push("ss");
@@ -128,6 +131,8 @@ function updateVehicle(num){
 								cx: p.x,
 								cy: p.y
 							});
+		clearAll();
+		redrawGrid();
 };	
 var dragPoint = d3.behavior.drag()
 	.on("drag", function(d,i) {
@@ -437,6 +442,7 @@ function transition() {
 								scaleHeatMap(temp);
 								heatmap.putImageData(temp,0,0);
 								ctx.clearRect(0,0,off.width,off.height);
+								redrawGrid();
 							}
 							
 							return "translate("+[(p.x-d.getPointAtLength(0).x), (p.y - d.getPointAtLength(0).y)] + ")";
@@ -618,6 +624,7 @@ function drawInTime(start, end){
 																	
 								}	
 								if(i===(sonarType.length-1)){
+										redrawGrid();
 										drawHeatMap(count)
 								}
 								p = d.getPointAtLength(timeScale(end)*l);
@@ -690,3 +697,4 @@ function scaleHeatMap(temp){
 function toggle() {
 	greyscale = !greyscale;
 }
+

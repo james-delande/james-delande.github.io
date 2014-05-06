@@ -63,13 +63,13 @@ svgContainer.append("rect")
 			.attr("stroke","black")
 			.transition()
 			.duration(2000)
-			.ease("linear")
+			.ease("bounce")
 			.attr("transform", "translate("+[-xBox*.5, -yBox*.5]+") scale(1.5)")
 			.each("end", function(){
 					d3.select(this).transition()
 					.duration(2000)
-					.ease("linear")
-					.attr("transform", "translate("+[-xBox*.1, -yBox*.1]+") scale(1.1)");
+					.ease("bounce")
+					.attr("transform", "translate("+[-xBox*.2, -yBox*.2]+") scale(1.2)");
 					});
 };
 function drawGrid(){
@@ -85,7 +85,7 @@ function drawGrid(){
                 .enter().append("g")
                   .attr("class", function(d,i){return "row"+i;});
 				  
-	var col = row.selectAll(".cell")
+	row.selectAll(".cell")
 				 .data(function (d) { return d; })
 				.enter().append("rect")
 				 .attr("class", function(d,i){return "cell cell"+i;})
@@ -93,26 +93,6 @@ function drawGrid(){
 				 .attr("y", function(d,i) { return d*20; })
 				 .attr("width", function(d) { return 20; })
 				 .attr("height", function(d) { return 20; })
-				 .on('mouseover', function(d,i) {
-					if(d===i){
-						//do nothing
-					}else if(d===0){
-						highlight(i-1);
-					}else if(i===0){
-						highlight(d-1);
-					}else{
-						drawConnection(d-1,i-1);
-					}
-				 })
-				 .on('mouseout', function(d,i) {
-					if(d===i){
-						//do nothing
-					}else if(d===0 || i ===0){
-						d3.selectAll(".highlight").remove();
-					}else{
-						d3.selectAll(".connection").remove();
-					}
-				 })
 				 .style("fill", function(d,i){
 						if(d===i){
 							return "#AAA"
@@ -134,7 +114,7 @@ function drawGrid(){
 						}
 					});
 					
-	var labels = row.selectAll(".label")
+	row.selectAll(".label")
 					 .data(function (d) { return d; })
 					.enter().append("text")
 					 .attr("class", function(d,i){return "label label"+i;})
@@ -144,7 +124,7 @@ function drawGrid(){
 						if(d===0 && i===0){
 							return "#";
 						}else if(d===i){
-							return "-"
+							return "\u2013"
 						}else if(d===0){
 							return i;
 						}else if(i===0){
@@ -154,19 +134,36 @@ function drawGrid(){
 						}else{
 							return "\u2717";
 						}
-					})				 
-					.on('mouseover', function(d,i) {
-						if((d===0 || i ===0)||(d===i)){
-							//do nothing
-						}else{
-							drawConnection(d-1,i-1);
-						}
-					 })
-					 .on('mouseout', function(d,i) {
-						if((d===0 || i ===0)||(d===i)){
-							//do nothing
-						}else{
-							d3.selectAll(".connection").remove();
-						}
-					 });
+					});
+					 
+	row.selectAll(".capture")
+			 .data(function (d) { return d; })
+			.enter().append("rect")
+			 .attr("class", "mouse-capture")
+			 .attr("x", function(d,i) { return i*20; })
+			 .attr("y", function(d,i) { return d*20; })
+			 .attr("width", function(d) { return 20; })
+			 .attr("height", function(d) { return 20; })
+			 .style("fill", "transparent")
+			 .style("stroke", "none")
+			 .on('mouseover', function(d,i) {
+				if(d===i){
+					//do nothing
+				}else if(d===0){
+					highlight(i-1);
+				}else if(i===0){
+					highlight(d-1);
+				}else{
+					drawConnection(d-1,i-1);
+				}
+			 })
+			 .on('mouseout', function(d,i) {
+				if(d===i){
+					//do nothing
+				}else if(d===0 || i ===0){
+					d3.selectAll(".highlight").remove();
+				}else{
+					d3.selectAll(".connection").remove();
+				}
+			 });
 };

@@ -7,7 +7,7 @@ for(i = 0; i<=6; i++){
 	networkMap.push([i,i,i,i,i,i,i]);	
 }
 
-
+var div;
 	
 function inRange(v1, v2){
 	var v1x = parseFloat(d3.selectAll(".UUV"+v1).attr("cx")),
@@ -40,7 +40,12 @@ function drawConnection(v1, v2){
 			.attr("x2", v2x)
 			.attr("y2", v2y)
 			.attr("stroke-width", 2);
-			
+	div.transition()        
+		.duration(200)      
+		.style("opacity", .9);      
+	div.html(Math.round(xscale.invert(dist)-xscale.invert(0)) + " meters")  
+		.style("left", (d3.event.pageX) + "px")     
+		.style("top", (d3.event.pageY - 28) + "px"); 		
 	if(dist <= sonarRange){
 		conn.style("stroke", "green");
 	}else{
@@ -154,7 +159,7 @@ function drawGrid(){
 				}else if(i===0){
 					highlight(d-1);
 				}else{
-					drawConnection(d-1,i-1);
+					drawConnection(d-1,i-1);    
 				}
 			 })
 			 .on('mouseout', function(d,i) {
@@ -164,6 +169,13 @@ function drawGrid(){
 					d3.selectAll(".highlight").remove();
 				}else{
 					d3.selectAll(".connection").remove();
+					div.transition()        
+						.duration(500)      
+						.style("opacity", 0);
 				}
 			 });
+			 
+	 div = d3.select("body").append("div")   
+		.attr("class", "tooltip")               
+		.style("opacity", 0);
 };

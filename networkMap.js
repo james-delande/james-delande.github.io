@@ -60,10 +60,12 @@ function drawGrid(){
 					console.log(d3.select(this));
 				 })
 				 .style("fill", function(d,i){
-						if(d===0 || i===0){
-							return "#EEE";
-						}else if(d===i){
+						if(d===i){
 							return "#AAA"
+						}else if(d===0){
+							return colors[i-1];
+						}else if(i===0){
+							return colors[d-1];
 						}else if(inRange(d-1,i-1)){
 							return "green";
 						}else{
@@ -75,6 +77,28 @@ function drawGrid(){
 							return "#EEE";
 						}else{
 							return "#000";
+						}
+					});
+					
+	var labels = row.selectAll(".cell")
+					 .data(function (d) { return d; })
+					.enter().append("text")
+					 .attr("class", function(d,i){return "label"+i;})
+					 .attr("x", function(d,i) { return i*20+5; })
+					 .attr("y", function(d,i) { return d*20+15; })
+					 .text(function(d,i){
+						if(d===0 && i===0){
+							return "#";
+						}else if(d===i){
+							return "-"
+						}else if(d===0){
+							return i;
+						}else if(i===0){
+							return d;
+						}else if(inRange(d-1,i-1)){
+							return "\u2713";
+						}else{
+							return "\u2717";
 						}
 					});
 };

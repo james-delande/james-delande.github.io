@@ -496,11 +496,6 @@ function getMax(imageData){
 	return max;
 }
 function drawHeatMap(count){
-	if(greyscale){
-		scaleColors = greyScaleColors;
-	}else{
-		scaleColors = brightScaleColors;
-	}
 	var colorScale = d3.scale.quantize()
 						 .domain([0,6])
 						 .range(scaleColors);
@@ -696,5 +691,11 @@ function scaleHeatMap(temp){
 
 function toggle() {
 	greyscale = !greyscale;
+	if(greyscale){
+		scaleColors = greyScaleColors;
+	}else{
+		scaleColors = brightScaleColors;
+	}
 }
 
+drawGrid();

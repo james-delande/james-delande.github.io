@@ -77,9 +77,7 @@ var sonarRange = xscale(750) - xscale(0), sonarAngle = Math.PI/4, draggable = tr
 var overlapData = new Array();
 var lineData = new Array();
 	lineData.push([{ "x": 100,   "y": -100},  { "x": 300,  "y": -100},
-                 { "x": 100,  "y": 100}, { "x": 300,  "y": 100}]);
-	lineData.push([{ "x": -400,   "y": 400},  { "x": -200,  "y": 400},
-                 { "x": -400,  "y": 600}, { "x": -200,  "y": 600}]);		 
+                 { "x": 100,  "y": 100}, { "x": 300,  "y": 100}]);		 
 	lineData.push([{ "x": 700,   "y": 400},  { "x": 900,  "y": 400},
                  { "x": 700,  "y": 600}, { "x": 900,  "y": 600}]);
 	lineData.push([{ "x": 1000,   "y": 1000},  { "x": 1200,  "y": 1000},
@@ -88,7 +86,8 @@ var lineData = new Array();
                  { "x": 100,  "y": 1200}, { "x": 300,  "y": 1200}]);	
 	lineData.push([{ "x": -600,   "y": 1000},  { "x": -400,  "y": 1000},
                  { "x": -600,  "y": 1200}, { "x": -400,  "y": 1200}]);
-
+	lineData.push([{ "x": -400,   "y": 400},  { "x": -200,  "y": 400},
+                 { "x": -400,  "y": 600}, { "x": -200,  "y": 600}]);
 
 //Create the path line
 var lineFunction = d3.svg.line()

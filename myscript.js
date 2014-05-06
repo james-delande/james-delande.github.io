@@ -424,7 +424,7 @@ function transition() {
 		.transition()
 		.duration(10000)
 		.ease("linear")
-		.attrTween("transform", function(d,i){ // Returns an attrTween for translating along the specified path element.
+		.attrTween("transform", function(d,i){ //Should probably just get rid of this
 						var l = d.getTotalLength();
 						return function(t) {									
 							var p = d.getPointAtLength(t * l),p1;
@@ -435,6 +435,10 @@ function transition() {
 							}
 							d3.select(".handle").attr("x",xSliderScale(t*100));
 							drawSonar(p,p1,i);
+							d3.select(".UUV"+i).attr({
+								cx: p.x,
+								cy: p.y
+							});
 							if(i===(sonarType.length-1)){
 								var temp = ctx.getImageData(0,0,off.width,off.height);
 								overlapData.push({"t" : t*100, "max":getMax(temp.data)});
@@ -444,24 +448,15 @@ function transition() {
 								ctx.clearRect(0,0,off.width,off.height);
 								redrawGrid();
 							}
-							
-							return "translate("+[(p.x-d.getPointAtLength(0).x), (p.y - d.getPointAtLength(0).y)] + ")";
+							return "translate(0,0)";
 						}
 					})
-		.each("start",function(d,i){
-					//console.log(d);
-					var p = d.getPointAtLength(0);
-					d3.selectAll(".UUV"+i).attr({
-											cx: p.x,
-											cy: p.y
-										});
-		})
 		.each("end",function(d,i){
 			if(i===(sonarType.length-1)){
 				heatmap.globalCompositeOperation = gCO;	
 				finish();
 			}
-			});
+		});
 };
 function drawOverlap(){
 	if(d3.select(".overlapLine")[0] != null){
